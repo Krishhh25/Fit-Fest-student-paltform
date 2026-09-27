@@ -22,185 +22,498 @@ const opportunities = [
 const CATEGORIES = ["Internship","Hackathon","Scholarship","Certification","Competition","Workshop","Course"];
 
 // ---------- State ----------
-let profile = JSON.parse(localStorage.getItem('scout_profile')) || {name:'', education:'', skills:[], interests:[]};
-let bookmarks = JSON.parse(localStorage.getItem('scout_bookmarks')) || [];
+let profile = JSON.parse(localStorage.getItem("scout_profile")) || {
+  name: "",
+  education: "",
+  location: "India",
+  about: "",
+  skills: [],
+  interests: []
+};
+
+let bookmarks = JSON.parse(localStorage.getItem("scout_bookmarks")) || [];
+let isLoggedIn = JSON.parse(localStorage.getItem("scout_logged_in")) || false;
+let loginEmail = localStorage.getItem("scout_login_email") || "";
 
 // ---------- Init ----------
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   setupTabs();
   populateCategoryFilter();
   populateCategoryCheckboxes();
   loadProfileForm();
+  setupLogin();
+  updateAuthUI();
   renderDiscover();
   renderDashboard();
-  document.getElementById('searchInput').addEventListener('input', renderDiscover);
-  document.getElementById('categoryFilter').addEventListener('change', renderDiscover);
-  document.getElementById('sortFilter').addEventListener('change', () => renderDiscover());
-  document.getElementById('profileForm').addEventListener('submit', saveProfile);
+  renderProfilePage();
+
+  document.getElementById("searchInput").addEventListener("input", renderDiscover);
+  document.getElementById("categoryFilter").addEventListener("change", renderDiscover);
+  document.getElementById("sortFilter").addEventListener("change", renderDiscover);
+
+  document.getElementById("profileForm").addEventListener("submit", saveProfile);
+  document.getElementById("cancelProfileEdit").addEventListener("click", () => showTab("profile"));
+
+  document.getElementById("editProfileBtn").addEventListener("click", () => {
+    requireLogin(() => showTab("profileEdit"));
+  });
+
+  document.getElementById("editAboutBtn").addEventListener("click", () => {
+    requireLogin(() => showTab("profileEdit"));
+  });
+
+  document.getElementById("editSkillsBtn").addEventListener("click", () => {
+    requireLogin(() => showTab("profileEdit"));
+  });
+
+  document.getElementById("editInterestsBtn").addEventListener("click", () => {
+    requireLogin(() => showTab("profileEdit"));
+  });
+
+  document.getElementById("dropdownProfile").addEventListener("click", () => {
+    document.getElementById("userDropdown").hidden = true;
+    showTab("profile");
+  });
+
+  document.getElementById("dropdownLogout").addEventListener("click", logout);
+
+  document.addEventListener("click", (event) => {
+    const accountArea = document.querySelector(".account-area");
+    if (!accountArea.contains(event.target)) {
+      document.getElementById("userDropdown").hidden = true;
+    }
+  });
 });
 
-function setupTabs(){
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
-      if (btn.dataset.tab === 'dashboard') renderDashboard();
+function setupTabs() {
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.tab === "profile" && !isLoggedIn) {
+        requireLogin(() => showTab("profile"));
+        return;
+      }
+
+      if (btn.dataset.tab === "dashboard" && !isLoggedIn) {
+        requireLogin(() => showTab("dashboard"));
+        return;
+      }
+
+      showTab(btn.dataset.tab);
     });
   });
 }
 
-function populateCategoryFilter(){
-  const sel = document.getElementById('categoryFilter');
+function showTab(tabId) {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+
+  const matchingBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+  if (matchingBtn) matchingBtn.classList.add("active");
+
+  const section = document.getElementById(tabId);
+  if (section) section.classList.add("active");
+
+  if (tabId === "dashboard") renderDashboard();
+  if (tabId === "profile") renderProfilePage();
+  if (tabId === "profileEdit") loadProfileForm();
+}
+
+function populateCategoryFilter() {
+  const sel = document.getElementById("categoryFilter");
+
   CATEGORIES.forEach(cat => {
-    const opt = document.createElement('option');
-    opt.value = cat; opt.textContent = cat;
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = cat;
     sel.appendChild(opt);
   });
 }
 
-function populateCategoryCheckboxes(){
-  const container = document.getElementById('categoryCheckboxes');
+function populateCategoryCheckboxes() {
+  const container = document.getElementById("categoryCheckboxes");
+
   CATEGORIES.forEach(cat => {
-    const wrap = document.createElement('label');
-    wrap.className = 'checkbox-item';
+    const wrap = document.createElement("label");
+    wrap.className = "checkbox-item";
     wrap.innerHTML = `<input type="checkbox" id="cat_${cat}" value="${cat}"> ${cat}`;
     container.appendChild(wrap);
   });
 }
 
-function loadProfileForm(){
-  document.getElementById('pName').value = profile.name;
-  document.getElementById('pEducation').value = profile.education;
-  document.getElementById('pSkills').value = profile.skills.join(', ');
-  profile.interests.forEach(cat => {
-    const cb = document.getElementById('cat_' + cat);
-    if (cb) cb.checked = true;
+function loadProfileForm() {
+  document.getElementById("pName").value = profile.name || "";
+  document.getElementById("pEducation").value = profile.education || "";
+  document.getElementById("pLocation").value = profile.location || "India";
+  document.getElementById("pAbout").value = profile.about || "";
+  document.getElementById("pSkills").value = (profile.skills || []).join(", ");
+
+  CATEGORIES.forEach(cat => {
+    const cb = document.getElementById("cat_" + cat);
+    if (cb) cb.checked = profile.interests.includes(cat);
   });
-  renderProfileSummary();
 }
 
-function saveProfile(e){
+function saveProfile(e) {
   e.preventDefault();
-  profile.name = document.getElementById('pName').value.trim();
-  profile.education = document.getElementById('pEducation').value.trim();
-  profile.skills = document.getElementById('pSkills').value.split(',').map(s => s.trim()).filter(Boolean);
-  profile.interests = Array.from(document.querySelectorAll('#categoryCheckboxes input:checked')).map(cb => cb.value);
-  localStorage.setItem('scout_profile', JSON.stringify(profile));
-  showToast('Profile saved!');
-  renderProfileSummary();
+
+  profile.name = document.getElementById("pName").value.trim();
+  profile.education = document.getElementById("pEducation").value.trim();
+  profile.location = document.getElementById("pLocation").value.trim() || "India";
+  profile.about = document.getElementById("pAbout").value.trim();
+  profile.skills = document.getElementById("pSkills").value
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  profile.interests = Array.from(
+    document.querySelectorAll("#categoryCheckboxes input:checked")
+  ).map(cb => cb.value);
+
+  localStorage.setItem("scout_profile", JSON.stringify(profile));
+
+  showToast("Profile saved!");
+  updateAuthUI();
+  renderProfilePage();
   renderDiscover();
   renderDashboard();
+  showTab("profile");
 }
 
-// ---------- Profile Summary ----------
-function renderProfileSummary(){
-  const container = document.getElementById('profileSummary');
-  if (!container) return;
+// ---------- Login ----------
+function setupLogin() {
+  const loginBtn = document.getElementById("loginBtn");
+  const userMenuBtn = document.getElementById("userMenuBtn");
+  const modal = document.getElementById("loginModal");
+  const closeBtn = document.getElementById("closeLoginModal");
+  const overlay = document.getElementById("modalOverlay");
+  const form = document.getElementById("loginForm");
 
-  if (!profile.name && profile.skills.length === 0){
-    container.innerHTML = '<p class="empty-hint">Fill out the form below to build your profile.</p>';
+  loginBtn.addEventListener("click", openLoginModal);
+  userMenuBtn.addEventListener("click", () => {
+    document.getElementById("userDropdown").hidden =
+      !document.getElementById("userDropdown").hidden;
+  });
+
+  closeBtn.addEventListener("click", closeLoginModal);
+  overlay.addEventListener("click", closeLoginModal);
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !email.includes("@")) {
+      showToast("Enter a valid email.");
+      return;
+    }
+
+    if (password.length < 4) {
+      showToast("Password must be at least 4 characters.");
+      return;
+    }
+
+    isLoggedIn = true;
+    loginEmail = email;
+
+    localStorage.setItem("scout_logged_in", JSON.stringify(true));
+    localStorage.setItem("scout_login_email", loginEmail);
+
+    if (!profile.name) {
+      profile.name = email.split("@")[0]
+        .replace(/[._-]+/g, " ")
+        .replace(/\b\w/g, c => c.toUpperCase());
+
+      localStorage.setItem("scout_profile", JSON.stringify(profile));
+    }
+
+    closeLoginModal();
+    updateAuthUI();
+    renderProfilePage();
+    renderDashboard();
+    showToast("Logged in successfully!");
+    showTab("profile");
+  });
+}
+
+function openLoginModal() {
+  const modal = document.getElementById("loginModal");
+  modal.hidden = false;
+  document.body.classList.add("modal-open");
+  setTimeout(() => document.getElementById("loginEmail").focus(), 0);
+}
+
+function closeLoginModal() {
+  const modal = document.getElementById("loginModal");
+  modal.hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
+function requireLogin(action) {
+  if (isLoggedIn) {
+    action();
     return;
   }
-  const initial = profile.name ? profile.name.charAt(0).toUpperCase() : '?';
-  const skillTags = profile.skills.map(s => `<span class="tag">${s}</span>`).join('');
-  const interestTags = profile.interests.map(c => `<span class="tag">${c}</span>`).join('');
-  container.innerHTML = `
-    <div class="avatar">${initial}</div>
-    <div class="profile-info">
-      <h2>${profile.name || 'Unnamed Student'}</h2>
-      <p>${profile.education || 'Education not set'}</p>
-      <div class="tag-row">${skillTags}${interestTags}</div>
+
+  openLoginModal();
+  showToast("Login to access your profile.");
+}
+
+function logout() {
+  isLoggedIn = false;
+  loginEmail = "";
+
+  localStorage.removeItem("scout_logged_in");
+  localStorage.removeItem("scout_login_email");
+
+  document.getElementById("userDropdown").hidden = true;
+  showToast("Logged out.");
+  showTab("discover");
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  const loginBtn = document.getElementById("loginBtn");
+  const userMenuBtn = document.getElementById("userMenuBtn");
+
+  if (isLoggedIn) {
+    loginBtn.hidden = true;
+    userMenuBtn.hidden = false;
+
+    const displayName = profile.name || "Student";
+    document.getElementById("navUserName").textContent =
+      displayName.length > 18 ? displayName.slice(0, 18) + "…" : displayName;
+
+    document.getElementById("navAvatar").textContent = getInitial();
+  } else {
+    loginBtn.hidden = false;
+    userMenuBtn.hidden = true;
+  }
+}
+
+// ---------- Profile ----------
+function getInitial() {
+  return profile.name ? profile.name.charAt(0).toUpperCase() : "?";
+}
+
+function renderProfilePage() {
+  document.getElementById("profileAvatarLarge").textContent = getInitial();
+  document.getElementById("profileName").textContent = profile.name || "Your Profile";
+  document.getElementById("profileEducation").textContent =
+    profile.education || "Add your education details";
+  document.getElementById("profileLocation").textContent =
+    profile.location || "India";
+
+  document.getElementById("profileAbout").textContent =
+    profile.about ||
+    "Complete your profile to show your education, skills, and interests.";
+
+  document.getElementById("profileBookmarks").textContent = bookmarks.length;
+  document.getElementById("profileSkillsCount").textContent = profile.skills.length;
+  document.getElementById("profileInterestsCount").textContent = profile.interests.length;
+
+  const matches = opportunities.filter(opp => matchScore(opp) > 0).length;
+  document.getElementById("profileMatchesCount").textContent = matches;
+
+  renderProfileTags("profileSkills", profile.skills, "Add skills from Edit Profile.");
+  renderProfileTags("profileInterests", profile.interests, "Select categories from Edit Profile.");
+  renderCompletion();
+}
+
+function renderProfileTags(containerId, values, emptyText) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+
+  if (!values.length) {
+    container.innerHTML = `<span class="tag">${emptyText}</span>`;
+    return;
+  }
+
+  values.forEach(value => {
+    const item = document.createElement("span");
+    item.className = "profile-tag";
+    item.textContent = value;
+    container.appendChild(item);
+  });
+}
+
+function renderCompletion() {
+  const checks = [
+    {label: "Name added", done: Boolean(profile.name)},
+    {label: "Education added", done: Boolean(profile.education)},
+    {label: "About added", done: Boolean(profile.about)},
+    {label: "Skills added", done: profile.skills.length > 0},
+    {label: "Interests selected", done: profile.interests.length > 0},
+    {label: "Location added", done: Boolean(profile.location)}
+  ];
+
+  const completed = checks.filter(item => item.done).length;
+  const percent = Math.round((completed / checks.length) * 100);
+
+  document.getElementById("completionPercent").textContent = `${percent}%`;
+  document.getElementById("completionBar").style.width = `${percent}%`;
+
+  document.getElementById("completionItems").innerHTML = checks.map(item => `
+    <div class="completion-item ${item.done ? "done" : ""}">
+      <span>${item.label}</span>
+      <span class="completion-check">${item.done ? "✓" : "—"}</span>
     </div>
-  `;
+  `).join("");
 }
 
 // ---------- Matching ----------
-function matchScore(opp){
+function matchScore(opp) {
   let score = 0;
   const skillsLower = (profile.skills || []).map(s => s.toLowerCase());
+
   opp.tags.forEach(t => {
     if (skillsLower.includes(t.toLowerCase())) score += 2;
   });
+
   if (profile.interests.includes(opp.category)) score += 1;
   return score;
 }
 
 // ---------- Discover ----------
-function renderDiscover(){
-  const search = document.getElementById('searchInput').value.toLowerCase();
-  const category = document.getElementById('categoryFilter').value;
-  const sort = document.getElementById('sortFilter').value;
+function renderDiscover() {
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const category = document.getElementById("categoryFilter").value;
+  const sort = document.getElementById("sortFilter").value;
 
   let filtered = opportunities.filter(opp => {
-    const matchesSearch = opp.title.toLowerCase().includes(search) || opp.tags.some(t => t.toLowerCase().includes(search));
-    const matchesCategory = category === 'all' || opp.category === category;
+    const matchesSearch =
+      opp.title.toLowerCase().includes(search) ||
+      opp.tags.some(t => t.toLowerCase().includes(search));
+
+    const matchesCategory =
+      category === "all" || opp.category === category;
+
     return matchesSearch && matchesCategory;
   });
 
-  if (sort === 'recommended') filtered.sort((a,b) => matchScore(b) - matchScore(a));
-  else if (sort === 'deadline') filtered.sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
-  else if (sort === 'title') filtered.sort((a,b) => a.title.localeCompare(b.title));
+  if (sort === "recommended") {
+    filtered.sort((a, b) => matchScore(b) - matchScore(a));
+  } else if (sort === "deadline") {
+    filtered.sort((a, b) => {
+      const aTime = a.deadline === "Rolling" || a.deadline === "Weekly"
+        ? Number.POSITIVE_INFINITY
+        : new Date(a.deadline).getTime();
 
-  renderGrid(filtered, 'opportunityGrid');
+      const bTime = b.deadline === "Rolling" || b.deadline === "Weekly"
+        ? Number.POSITIVE_INFINITY
+        : new Date(b.deadline).getTime();
+
+      return aTime - bTime;
+    });
+  } else if (sort === "title") {
+    filtered.sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  renderGrid(filtered, "opportunityGrid");
 }
 
-function renderGrid(list, containerId){
+function renderGrid(list, containerId) {
   const container = document.getElementById(containerId);
-  container.innerHTML = '';
-  if (list.length === 0){
-    container.innerHTML = '<p class="empty-state">No opportunities match your filters yet.</p>';
+  container.innerHTML = "";
+
+  if (list.length === 0) {
+    container.innerHTML =
+      '<p class="empty-state">No opportunities match your filters yet.</p>';
     return;
   }
+
   list.forEach(opp => {
-    const card = document.createElement('div');
-    card.className = 'opp-card';
+    const card = document.createElement("div");
+    card.className = "opp-card";
+
     const isBookmarked = bookmarks.includes(opp.id);
     const score = matchScore(opp);
+
     card.innerHTML = `
-      ${score > 0 ? `<span class="match-badge">${score >= 3 ? '🔥 Great match' : '✨ Match'}</span>` : ''}
+      ${score > 0 ? `<span class="match-badge">${score >= 3 ? "🔥 Great match" : "✨ Match"}</span>` : ""}
       <div class="opp-category">${opp.category}</div>
       <h3>${opp.title}</h3>
       <p class="opp-desc">${opp.description}</p>
-      <div class="tag-row">${opp.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      <div class="tag-row">
+        ${opp.tags.map(t => `<span class="tag">${t}</span>`).join("")}
+      </div>
       <div class="opp-footer">
         <span class="deadline">📅 ${opp.deadline}</span>
         <div class="opp-actions">
-          <button class="bookmark-btn ${isBookmarked ? 'active' : ''}" data-id="${opp.id}">${isBookmarked ? '★' : '☆'}</button>
-          <a href="${opp.link}" target="_blank" class="view-link">View →</a>
+          <button class="bookmark-btn ${isBookmarked ? "active" : ""}" data-id="${opp.id}">
+            ${isBookmarked ? "★" : "☆"}
+          </button>
+          <a href="${opp.link}" target="_blank" rel="noopener noreferrer" class="view-link">View →</a>
         </div>
       </div>
     `;
+
     container.appendChild(card);
   });
-  container.querySelectorAll('.bookmark-btn').forEach(btn => {
-    btn.addEventListener('click', () => toggleBookmark(parseInt(btn.dataset.id)));
+
+  container.querySelectorAll(".bookmark-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (!isLoggedIn) {
+        requireLogin(() => toggleBookmark(parseInt(btn.dataset.id, 10)));
+        return;
+      }
+
+      toggleBookmark(parseInt(btn.dataset.id, 10));
+    });
   });
 }
 
-function toggleBookmark(id){
-  bookmarks = bookmarks.includes(id) ? bookmarks.filter(b => b !== id) : [...bookmarks, id];
-  localStorage.setItem('scout_bookmarks', JSON.stringify(bookmarks));
+function toggleBookmark(id) {
+  bookmarks = bookmarks.includes(id)
+    ? bookmarks.filter(b => b !== id)
+    : [...bookmarks, id];
+
+  localStorage.setItem("scout_bookmarks", JSON.stringify(bookmarks));
+
   renderDiscover();
   renderDashboard();
+  renderProfilePage();
 }
 
 // ---------- Dashboard ----------
-function renderDashboard(){
-  document.getElementById('statsRow').innerHTML = `
-    <div class="stat-card"><span class="stat-num">${opportunities.length}</span><span class="stat-label">Total Opportunities</span></div>
-    <div class="stat-card"><span class="stat-num">${bookmarks.length}</span><span class="stat-label">Bookmarked</span></div>
-    <div class="stat-card"><span class="stat-num">${profile.skills.length}</span><span class="stat-label">Skills Added</span></div>
+function renderDashboard() {
+  const statsRow = document.getElementById("statsRow");
+
+  statsRow.innerHTML = `
+    <div class="stat-card">
+      <span class="stat-num">${opportunities.length}</span>
+      <span class="stat-label">Total Opportunities</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-num">${bookmarks.length}</span>
+      <span class="stat-label">Bookmarked</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-num">${profile.skills.length}</span>
+      <span class="stat-label">Skills Added</span>
+    </div>
   `;
-  const recommended = [...opportunities].sort((a,b) => matchScore(b) - matchScore(a)).filter(o => matchScore(o) > 0).slice(0,4);
-  renderGrid(recommended.length ? recommended : opportunities.slice(0,4), 'recommendedList');
-  renderGrid(opportunities.filter(o => bookmarks.includes(o.id)), 'bookmarkedList');
+
+  const recommended = [...opportunities]
+    .sort((a, b) => matchScore(b) - matchScore(a))
+    .filter(o => matchScore(o) > 0)
+    .slice(0, 4);
+
+  renderGrid(
+    recommended.length ? recommended : opportunities.slice(0, 4),
+    "recommendedList"
+  );
+
+  renderGrid(
+    opportunities.filter(o => bookmarks.includes(o.id)),
+    "bookmarkedList"
+  );
 }
 
-function showToast(msg){
-  const toast = document.getElementById('toast');
+// ---------- Toast ----------
+function showToast(msg) {
+  const toast = document.getElementById("toast");
   toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2000);
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2000);
 }

@@ -1,7 +1,12 @@
 {
-  "name": "scout",
+  "name": "scout-opportunity-platform",
   "version": "1.0.0",
+  "description": "Student Opportunity Discovery Platform",
   "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "dependencies": { "express": "^4.19.2" }
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
 }

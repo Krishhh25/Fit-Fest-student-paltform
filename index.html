@@ -1,18 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scout- Find Your Next Opportunity</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scout - Find Your Next Opportunity</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <nav class="navbar">
     <div class="logo">🎯 Scout</div>
+
     <div class="nav-tabs">
       <button class="tab-btn active" data-tab="discover">Discover</button>
       <button class="tab-btn" data-tab="dashboard">Dashboard</button>
       <button class="tab-btn" data-tab="profile">Profile</button>
+    </div>
+
+    <div class="account-area">
+      <button id="loginBtn" class="login-btn">Login</button>
+      <button id="userMenuBtn" class="user-menu" hidden>
+        <span id="navAvatar" class="nav-avatar">?</span>
+        <span id="navUserName">Profile</span>
+        <span class="chevron">⌄</span>
+      </button>
+      <div id="userDropdown" class="user-dropdown" hidden>
+        <button id="dropdownProfile">View Profile</button>
+        <button id="dropdownLogout">Logout</button>
+      </div>
     </div>
   </nav>
 
@@ -22,6 +36,7 @@
         <h1>Discover Opportunities</h1>
         <p>Internships, hackathons, scholarships & more — all in one place.</p>
       </div>
+
       <div class="filters">
         <input type="text" id="searchInput" placeholder="Search by title or skill...">
         <select id="categoryFilter">
@@ -33,19 +48,24 @@
           <option value="title">Title (A–Z)</option>
         </select>
       </div>
+
       <div id="opportunityGrid" class="opportunity-grid"></div>
     </section>
 
     <section id="dashboard" class="tab-content">
       <div class="section-header">
         <h1>Your Dashboard</h1>
+        <p>Track your saved opportunities and personalized matches.</p>
       </div>
+
       <div class="stats-row" id="statsRow"></div>
+
       <div class="dashboard-columns">
         <div>
           <h2>⭐ Recommended for You</h2>
           <div id="recommendedList" class="opportunity-grid small"></div>
         </div>
+
         <div>
           <h2>🔖 Bookmarked</h2>
           <div id="bookmarkedList" class="opportunity-grid small"></div>
@@ -54,29 +74,174 @@
     </section>
 
     <section id="profile" class="tab-content">
-      <div class="section-header">
-        <h1>Your Profile</h1>
-        <p>Tell us about yourself so we can find the best matches.</p>
+      <div class="profile-page">
+        <div class="profile-cover"></div>
+
+        <div class="profile-card">
+          <div class="profile-top">
+            <div id="profileAvatarLarge" class="profile-avatar-large">?</div>
+
+            <div class="profile-heading">
+              <div class="profile-name-row">
+                <h1 id="profileName">Your Profile</h1>
+                <span id="profileVerified" class="verified-badge">Student</span>
+              </div>
+              <p id="profileEducation">Add your education details</p>
+              <p id="profileLocation" class="profile-location">India</p>
+            </div>
+
+            <button id="editProfileBtn" class="secondary-btn profile-edit-btn">Edit Profile</button>
+          </div>
+
+          <div class="profile-stat-grid">
+            <div class="profile-stat">
+              <strong id="profileBookmarks">0</strong>
+              <span>Bookmarks</span>
+            </div>
+            <div class="profile-stat">
+              <strong id="profileSkillsCount">0</strong>
+              <span>Skills</span>
+            </div>
+            <div class="profile-stat">
+              <strong id="profileInterestsCount">0</strong>
+              <span>Interests</span>
+            </div>
+            <div class="profile-stat">
+              <strong id="profileMatchesCount">0</strong>
+              <span>Matches</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-layout">
+          <div class="profile-main-column">
+            <div class="profile-panel">
+              <div class="panel-heading">
+                <h2>About</h2>
+                <button class="text-btn" id="editAboutBtn">Edit</button>
+              </div>
+              <p id="profileAbout" class="about-text">
+                Complete your profile to show your education, skills, and interests.
+              </p>
+            </div>
+
+            <div class="profile-panel">
+              <div class="panel-heading">
+                <h2>Skills</h2>
+                <button class="text-btn" id="editSkillsBtn">Edit</button>
+              </div>
+              <div id="profileSkills" class="profile-tags"></div>
+            </div>
+
+            <div class="profile-panel">
+              <div class="panel-heading">
+                <h2>Interested In</h2>
+                <button class="text-btn" id="editInterestsBtn">Edit</button>
+              </div>
+              <div id="profileInterests" class="profile-tags"></div>
+            </div>
+          </div>
+
+          <aside class="profile-side-column">
+            <div class="profile-panel">
+              <div class="panel-heading">
+                <h2>Profile Completion</h2>
+              </div>
+
+              <div class="completion-track">
+                <div id="completionBar" class="completion-bar"></div>
+              </div>
+              <div class="completion-label">
+                <strong id="completionPercent">0%</strong>
+                <span>Complete</span>
+              </div>
+
+              <div id="completionItems" class="completion-items"></div>
+            </div>
+
+            <div class="profile-panel profile-tip">
+              <span class="tip-icon">💡</span>
+              <div>
+                <h3>Improve your profile</h3>
+                <p>Add more skills and interests to improve your opportunity matches.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
-      <div id="profileSummary" class="profile-summary"></div>
+    </section>
+
+    <section id="profileEdit" class="tab-content">
+      <div class="section-header">
+        <h1>Edit Your Profile</h1>
+        <p>Keep your profile updated so Scout can personalize opportunities for you.</p>
+      </div>
+
       <form id="profileForm" class="profile-form">
-        <label>Name
+        <label>
+          Full Name
           <input type="text" id="pName" placeholder="Your name">
         </label>
-        <label>Education
+
+        <label>
+          Education
           <input type="text" id="pEducation" placeholder="e.g. BCA 3rd Year">
         </label>
-        <label>Skills (comma separated)
+
+        <label>
+          Location
+          <input type="text" id="pLocation" placeholder="e.g. Pune, Maharashtra">
+        </label>
+
+        <label>
+          About
+          <textarea id="pAbout" rows="4" placeholder="Tell us briefly about yourself, your goals, or what you are learning."></textarea>
+        </label>
+
+        <label>
+          Skills (comma separated)
           <input type="text" id="pSkills" placeholder="e.g. Python, React, SQL">
         </label>
+
         <fieldset>
           <legend>Interested Categories</legend>
           <div id="categoryCheckboxes" class="checkbox-grid"></div>
         </fieldset>
-        <button type="submit">Save Profile</button>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-btn">Save Profile</button>
+          <button type="button" id="cancelProfileEdit" class="secondary-btn">Cancel</button>
+        </div>
       </form>
     </section>
   </main>
+
+  <div id="loginModal" class="modal" hidden>
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+      <button id="closeLoginModal" class="modal-close" aria-label="Close">×</button>
+
+      <div class="modal-logo">🎯</div>
+      <h2 id="loginTitle">Welcome to Scout</h2>
+      <p class="modal-subtitle">Log in to access your personalized student profile.</p>
+
+      <form id="loginForm" class="login-form">
+        <label>
+          Email
+          <input type="email" id="loginEmail" placeholder="you@example.com" required>
+        </label>
+
+        <label>
+          Password
+          <input type="password" id="loginPassword" placeholder="••••••••" required minlength="4">
+        </label>
+
+        <button type="submit" class="primary-btn">Login</button>
+      </form>
+
+      <p class="demo-note">Demo login: any valid email and password with at least 4 characters.</p>
+    </div>
+  </div>
 
   <div id="toast" class="toast"></div>
   <script src="script.js"></script>
