@@ -693,6 +693,51 @@ main {
   border-color: var(--accent);
 }
 
+
+.profile-email {
+  color: var(--text-dim);
+  font-size: .78rem;
+  margin-top: .05rem;
+}
+
+.auth-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .25rem;
+  margin: 0 0 1rem;
+  padding: .25rem;
+  background: #0d131a;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.auth-tab {
+  background: transparent;
+  border: 0;
+  color: var(--text-dim);
+  padding: .55rem;
+  border-radius: 7px;
+  font-weight: 700;
+}
+
+.auth-tab.active {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.forgot-btn {
+  display: block;
+  margin: .8rem auto 0;
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  font-size: .8rem;
+}
+
+.forgot-btn:hover {
+  text-decoration: underline;
+}
+
 /* Login modal */
 .modal[hidden],
 .user-menu[hidden],

@@ -1,5 +1,5 @@
 // ---------- Seed Data ----------
-const opportunities = [
+let opportunities = [
   {id:1, title:"Google Summer of Code 2026", category:"Internship", tags:["Python","Open Source","Git"], deadline:"2026-04-15", description:"Contribute to real open-source projects with a stipend, mentored by experienced devs.", link:"https://summerofcode.withgoogle.com/"},
   {id:2, title:"Smart India Hackathon 2026", category:"Hackathon", tags:["Problem Solving","Full Stack","Innovation"], deadline:"2026-08-01", description:"National-level hackathon solving real problem statements from ministries and industry.", link:"https://sih.gov.in/"},
   {id:3, title:"Microsoft Learn Student Ambassadors", category:"Certification", tags:["Cloud","Community","Azure"], deadline:"Rolling", description:"Build technical skills and community leadership experience with Microsoft's student program.", link:"https://mlsa.microsoft.com/"},
@@ -21,8 +21,21 @@ const opportunities = [
 
 const CATEGORIES = ["Internship","Hackathon","Scholarship","Certification","Competition","Workshop","Course"];
 
+// ---------- Supabase ----------
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
+);
+
 // ---------- State ----------
-let profile = JSON.parse(localStorage.getItem("scout_profile")) || {
+let profile = {
   name: "",
   education: "",
   location: "India",
@@ -30,19 +43,19 @@ let profile = JSON.parse(localStorage.getItem("scout_profile")) || {
   skills: [],
   interests: []
 };
-
-let bookmarks = JSON.parse(localStorage.getItem("scout_bookmarks")) || [];
-let isLoggedIn = JSON.parse(localStorage.getItem("scout_logged_in")) || false;
-let loginEmail = localStorage.getItem("scout_login_email") || "";
+let bookmarks = [];
+let currentUser = null;
+let authMode = "login";
 
 // ---------- Init ----------
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   setupTabs();
   populateCategoryFilter();
   populateCategoryCheckboxes();
-  loadProfileForm();
-  setupLogin();
-  updateAuthUI();
+  setupAuthUI();
+  setupProfileUI();
+
+  await loadOpportunities();
   renderDiscover();
   renderDashboard();
   renderProfilePage();
@@ -51,54 +64,130 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("categoryFilter").addEventListener("change", renderDiscover);
   document.getElementById("sortFilter").addEventListener("change", renderDiscover);
 
-  document.getElementById("profileForm").addEventListener("submit", saveProfile);
-  document.getElementById("cancelProfileEdit").addEventListener("click", () => showTab("profile"));
+  const { data: { session }, error } = await supabaseClient.auth.getSession();
+  if (error) console.error("Session error:", error);
+  await syncSession(session);
 
-  document.getElementById("editProfileBtn").addEventListener("click", () => {
-    requireLogin(() => showTab("profileEdit"));
-  });
-
-  document.getElementById("editAboutBtn").addEventListener("click", () => {
-    requireLogin(() => showTab("profileEdit"));
-  });
-
-  document.getElementById("editSkillsBtn").addEventListener("click", () => {
-    requireLogin(() => showTab("profileEdit"));
-  });
-
-  document.getElementById("editInterestsBtn").addEventListener("click", () => {
-    requireLogin(() => showTab("profileEdit"));
-  });
-
-  document.getElementById("dropdownProfile").addEventListener("click", () => {
-    document.getElementById("userDropdown").hidden = true;
-    showTab("profile");
-  });
-
-  document.getElementById("dropdownLogout").addEventListener("click", logout);
-
-  document.addEventListener("click", (event) => {
-    const accountArea = document.querySelector(".account-area");
-    if (!accountArea.contains(event.target)) {
-      document.getElementById("userDropdown").hidden = true;
-    }
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    setTimeout(() => {
+      syncSession(session, event).catch(err => console.error("Auth state error:", err));
+    }, 0);
   });
 });
+
+async function syncSession(session, event = "INITIAL_SESSION") {
+  currentUser = session?.user || null;
+
+  if (!currentUser) {
+    profile = { name: "", education: "", location: "India", about: "", skills: [], interests: [] };
+    bookmarks = [];
+    updateAuthUI();
+    renderProfilePage();
+    renderDashboard();
+    renderDiscover();
+    return;
+  }
+
+  await loadUserData();
+  updateAuthUI();
+  renderProfilePage();
+  renderDashboard();
+  renderDiscover();
+
+  if (event === "SIGNED_IN") {
+    showToast("Welcome to Scout!");
+  }
+
+  if (event === "PASSWORD_RECOVERY") {
+    openResetModal();
+  }
+}
+
+async function loadUserData() {
+  const localProfile = JSON.parse(localStorage.getItem("scout_profile") || "null");
+  const localBookmarks = JSON.parse(localStorage.getItem("scout_bookmarks") || "[]");
+
+  const { data: profileData, error: profileError } = await supabaseClient
+    .from("profiles")
+    .select("full_name, education, location, about, skills, interests")
+    .eq("id", currentUser.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("Profile load error:", profileError);
+    showToast("Could not load your profile.");
+  }
+
+  if (profileData) {
+    profile = {
+      name: profileData.full_name || "",
+      education: profileData.education || "",
+      location: profileData.location || "India",
+      about: profileData.about || "",
+      skills: Array.isArray(profileData.skills) ? profileData.skills : [],
+      interests: Array.isArray(profileData.interests) ? profileData.interests : []
+    };
+  } else {
+    profile = {
+      name: localProfile?.name || currentUser.user_metadata?.full_name || "",
+      education: localProfile?.education || "",
+      location: localProfile?.location || "India",
+      about: localProfile?.about || "",
+      skills: Array.isArray(localProfile?.skills) ? localProfile.skills : [],
+      interests: Array.isArray(localProfile?.interests) ? localProfile.interests : []
+    };
+
+    const { error } = await supabaseClient.from("profiles").insert({
+      id: currentUser.id,
+      full_name: profile.name,
+      education: profile.education,
+      location: profile.location,
+      about: profile.about,
+      skills: profile.skills,
+      interests: profile.interests
+    });
+
+    if (error) console.error("Profile create error:", error);
+  }
+
+  const { data: bookmarkRows, error: bookmarkError } = await supabaseClient
+    .from("bookmarks")
+    .select("opportunity_id")
+    .eq("user_id", currentUser.id);
+
+  if (bookmarkError) {
+    console.error("Bookmark load error:", bookmarkError);
+    showToast("Could not load bookmarks.");
+    bookmarks = [];
+  } else {
+    bookmarks = bookmarkRows.map(row => row.opportunity_id);
+  }
+
+  // Preserve bookmarks/profile from the old local-only version on first account login.
+  if (!profileData && localBookmarks.length && !bookmarks.length) {
+    for (const opportunityId of localBookmarks) {
+      const { error } = await supabaseClient.from("bookmarks").upsert(
+        { user_id: currentUser.id, opportunity_id: Number(opportunityId) },
+        { onConflict: "user_id,opportunity_id" }
+      );
+      if (error) console.error("Bookmark migration error:", error);
+    }
+    bookmarks = [...new Set(localBookmarks.map(Number))];
+  }
+
+  localStorage.removeItem("scout_profile");
+  localStorage.removeItem("scout_bookmarks");
+}
 
 function setupTabs() {
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      if (btn.dataset.tab === "profile" && !isLoggedIn) {
-        requireLogin(() => showTab("profile"));
+      const tab = btn.dataset.tab;
+      if ((tab === "profile" || tab === "dashboard") && !currentUser) {
+        openLoginModal();
         return;
       }
-
-      if (btn.dataset.tab === "dashboard" && !isLoggedIn) {
-        requireLogin(() => showTab("dashboard"));
-        return;
-      }
-
-      showTab(btn.dataset.tab);
+      showTab(tab);
     });
   });
 }
@@ -120,7 +209,6 @@ function showTab(tabId) {
 
 function populateCategoryFilter() {
   const sel = document.getElementById("categoryFilter");
-
   CATEGORIES.forEach(cat => {
     const opt = document.createElement("option");
     opt.value = cat;
@@ -131,12 +219,26 @@ function populateCategoryFilter() {
 
 function populateCategoryCheckboxes() {
   const container = document.getElementById("categoryCheckboxes");
-
   CATEGORIES.forEach(cat => {
     const wrap = document.createElement("label");
     wrap.className = "checkbox-item";
     wrap.innerHTML = `<input type="checkbox" id="cat_${cat}" value="${cat}"> ${cat}`;
     container.appendChild(wrap);
+  });
+}
+
+function setupProfileUI() {
+  document.getElementById("profileForm").addEventListener("submit", saveProfile);
+  document.getElementById("cancelProfileEdit").addEventListener("click", () => showTab("profile"));
+
+  ["editProfileBtn", "editAboutBtn", "editSkillsBtn", "editInterestsBtn"].forEach(id => {
+    document.getElementById(id).addEventListener("click", () => {
+      if (!currentUser) {
+        openLoginModal();
+        return;
+      }
+      showTab("profileEdit");
+    });
   });
 }
 
@@ -153,8 +255,12 @@ function loadProfileForm() {
   });
 }
 
-function saveProfile(e) {
+async function saveProfile(e) {
   e.preventDefault();
+  if (!currentUser) {
+    openLoginModal();
+    return;
+  }
 
   profile.name = document.getElementById("pName").value.trim();
   profile.education = document.getElementById("pEducation").value.trim();
@@ -164,12 +270,26 @@ function saveProfile(e) {
     .split(",")
     .map(s => s.trim())
     .filter(Boolean);
-
   profile.interests = Array.from(
     document.querySelectorAll("#categoryCheckboxes input:checked")
   ).map(cb => cb.value);
 
-  localStorage.setItem("scout_profile", JSON.stringify(profile));
+  const { error } = await supabaseClient.from("profiles").upsert({
+    id: currentUser.id,
+    full_name: profile.name,
+    education: profile.education,
+    location: profile.location,
+    about: profile.about,
+    skills: profile.skills,
+    interests: profile.interests,
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) {
+    console.error("Profile save error:", error);
+    showToast("Could not save profile.");
+    return;
+  }
 
   showToast("Profile saved!");
   updateAuthUI();
@@ -179,111 +299,239 @@ function saveProfile(e) {
   showTab("profile");
 }
 
-// ---------- Login ----------
-function setupLogin() {
-  const loginBtn = document.getElementById("loginBtn");
-  const userMenuBtn = document.getElementById("userMenuBtn");
-  const modal = document.getElementById("loginModal");
-  const closeBtn = document.getElementById("closeLoginModal");
-  const overlay = document.getElementById("modalOverlay");
-  const form = document.getElementById("loginForm");
+async function loadOpportunities() {
+  const { data, error } = await supabaseClient
+    .from("opportunities")
+    .select("id, title, category, tags, deadline, description, link")
+    .order("id");
 
-  loginBtn.addEventListener("click", openLoginModal);
-  userMenuBtn.addEventListener("click", () => {
-    document.getElementById("userDropdown").hidden =
-      !document.getElementById("userDropdown").hidden;
+  if (error) {
+    console.warn("Could not load opportunities from Supabase. Using local seed data.", error);
+    return;
+  }
+
+  if (Array.isArray(data) && data.length) {
+    opportunities = data.map(item => ({
+      ...item,
+      tags: Array.isArray(item.tags) ? item.tags : []
+    }));
+  }
+}
+
+// ---------- Auth ----------
+function setupAuthUI() {
+  document.getElementById("loginBtn").addEventListener("click", openLoginModal);
+  document.getElementById("userMenuBtn").addEventListener("click", () => {
+    const dropdown = document.getElementById("userDropdown");
+    dropdown.hidden = !dropdown.hidden;
   });
 
-  closeBtn.addEventListener("click", closeLoginModal);
-  overlay.addEventListener("click", closeLoginModal);
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById("loginEmail").value.trim();
-    const password = document.getElementById("loginPassword").value;
-
-    if (!email || !email.includes("@")) {
-      showToast("Enter a valid email.");
-      return;
-    }
-
-    if (password.length < 4) {
-      showToast("Password must be at least 4 characters.");
-      return;
-    }
-
-    isLoggedIn = true;
-    loginEmail = email;
-
-    localStorage.setItem("scout_logged_in", JSON.stringify(true));
-    localStorage.setItem("scout_login_email", loginEmail);
-
-    if (!profile.name) {
-      profile.name = email.split("@")[0]
-        .replace(/[._-]+/g, " ")
-        .replace(/\b\w/g, c => c.toUpperCase());
-
-      localStorage.setItem("scout_profile", JSON.stringify(profile));
-    }
-
-    closeLoginModal();
-    updateAuthUI();
-    renderProfilePage();
-    renderDashboard();
-    showToast("Logged in successfully!");
+  document.getElementById("dropdownProfile").addEventListener("click", () => {
+    document.getElementById("userDropdown").hidden = true;
     showTab("profile");
   });
+
+  document.getElementById("dropdownLogout").addEventListener("click", logout);
+
+  document.getElementById("closeLoginModal").addEventListener("click", closeLoginModal);
+  document.getElementById("modalOverlay").addEventListener("click", closeLoginModal);
+
+  document.querySelectorAll(".auth-tab").forEach(tab => {
+    tab.addEventListener("click", () => setAuthMode(tab.dataset.authMode));
+  });
+
+  document.getElementById("loginForm").addEventListener("submit", handleAuthSubmit);
+  document.getElementById("forgotPasswordBtn").addEventListener("click", handleForgotPassword);
+
+  document.getElementById("closeResetModal").addEventListener("click", closeResetModal);
+  document.getElementById("resetOverlay").addEventListener("click", closeResetModal);
+  document.getElementById("resetForm").addEventListener("submit", updatePassword);
+
+  document.addEventListener("click", event => {
+    const accountArea = document.querySelector(".account-area");
+    if (!accountArea.contains(event.target)) {
+      document.getElementById("userDropdown").hidden = true;
+    }
+  });
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const signup = mode === "signup";
+
+  document.querySelectorAll(".auth-tab").forEach(tab => {
+    tab.classList.toggle("active", tab.dataset.authMode === mode);
+  });
+
+  document.getElementById("authTitle").textContent = signup ? "Create your Scout account" : "Welcome to Scout";
+  document.getElementById("authSubtitle").textContent = signup
+    ? "Create an account to save your profile and opportunities across devices."
+    : "Log in to access your personalized student profile.";
+  document.getElementById("fullNameField").hidden = !signup;
+  document.getElementById("confirmPasswordField").hidden = !signup;
+  document.getElementById("loginConfirmPassword").required = signup;
+  document.getElementById("authSubmitBtn").textContent = signup ? "Create account" : "Login";
+  document.getElementById("forgotPasswordBtn").hidden = signup;
+  document.getElementById("authNote").textContent = signup
+    ? "Your account and profile are securely handled by Supabase."
+    : "Use your Scout email and password to sign in.";
 }
 
 function openLoginModal() {
   const modal = document.getElementById("loginModal");
   modal.hidden = false;
   document.body.classList.add("modal-open");
+  setAuthMode(authMode);
   setTimeout(() => document.getElementById("loginEmail").focus(), 0);
 }
 
 function closeLoginModal() {
-  const modal = document.getElementById("loginModal");
-  modal.hidden = true;
+  document.getElementById("loginModal").hidden = true;
   document.body.classList.remove("modal-open");
 }
 
-function requireLogin(action) {
-  if (isLoggedIn) {
-    action();
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  if (!email || !email.includes("@")) {
+    showToast("Enter a valid email.");
     return;
   }
 
-  openLoginModal();
-  showToast("Login to access your profile.");
+  if (password.length < 6) {
+    showToast("Password must be at least 6 characters.");
+    return;
+  }
+
+  const button = document.getElementById("authSubmitBtn");
+  button.disabled = true;
+
+  try {
+    if (authMode === "signup") {
+      const fullName = document.getElementById("loginFullName").value.trim();
+      const confirmation = document.getElementById("loginConfirmPassword").value;
+
+      if (password !== confirmation) {
+        showToast("Passwords do not match.");
+        return;
+      }
+
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName }
+        }
+      });
+
+      if (error) {
+        showToast(error.message);
+        return;
+      }
+
+      if (data.session) {
+        closeLoginModal();
+      } else {
+        showToast("Account created. Check your email to confirm it.");
+        setAuthMode("login");
+      }
+    } else {
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        showToast(error.message);
+        return;
+      }
+
+      closeLoginModal();
+    }
+  } finally {
+    button.disabled = false;
+  }
 }
 
-function logout() {
-  isLoggedIn = false;
-  loginEmail = "";
+async function handleForgotPassword() {
+  const email = document.getElementById("loginEmail").value.trim();
+  if (!email || !email.includes("@")) {
+    showToast("Enter your email first.");
+    return;
+  }
 
-  localStorage.removeItem("scout_logged_in");
-  localStorage.removeItem("scout_login_email");
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+
+  if (error) {
+    showToast(error.message);
+    return;
+  }
+
+  showToast("Password reset email sent.");
+}
+
+async function updatePassword(e) {
+  e.preventDefault();
+  const password = document.getElementById("newPassword").value;
+  const confirm = document.getElementById("confirmNewPassword").value;
+
+  if (password.length < 6) {
+    showToast("Password must be at least 6 characters.");
+    return;
+  }
+
+  if (password !== confirm) {
+    showToast("Passwords do not match.");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.updateUser({ password });
+  if (error) {
+    showToast(error.message);
+    return;
+  }
+
+  closeResetModal();
+  showToast("Password updated successfully.");
+}
+
+function openResetModal() {
+  document.getElementById("resetModal").hidden = false;
+  document.body.classList.add("modal-open");
+}
+
+function closeResetModal() {
+  document.getElementById("resetModal").hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
+async function logout() {
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) {
+    showToast(error.message);
+    return;
+  }
 
   document.getElementById("userDropdown").hidden = true;
   showToast("Logged out.");
   showTab("discover");
-  updateAuthUI();
 }
 
 function updateAuthUI() {
   const loginBtn = document.getElementById("loginBtn");
   const userMenuBtn = document.getElementById("userMenuBtn");
 
-  if (isLoggedIn) {
+  if (currentUser) {
     loginBtn.hidden = true;
     userMenuBtn.hidden = false;
-
     const displayName = profile.name || "Student";
     document.getElementById("navUserName").textContent =
       displayName.length > 18 ? displayName.slice(0, 18) + "…" : displayName;
-
     document.getElementById("navAvatar").textContent = getInitial();
   } else {
     loginBtn.hidden = false;
@@ -301,12 +549,10 @@ function renderProfilePage() {
   document.getElementById("profileName").textContent = profile.name || "Your Profile";
   document.getElementById("profileEducation").textContent =
     profile.education || "Add your education details";
-  document.getElementById("profileLocation").textContent =
-    profile.location || "India";
-
+  document.getElementById("profileEmail").textContent = currentUser?.email || "";
+  document.getElementById("profileLocation").textContent = profile.location || "India";
   document.getElementById("profileAbout").textContent =
-    profile.about ||
-    "Complete your profile to show your education, skills, and interests.";
+    profile.about || "Complete your profile to show your education, skills, and interests.";
 
   document.getElementById("profileBookmarks").textContent = bookmarks.length;
   document.getElementById("profileSkillsCount").textContent = profile.skills.length;
@@ -339,12 +585,12 @@ function renderProfileTags(containerId, values, emptyText) {
 
 function renderCompletion() {
   const checks = [
-    {label: "Name added", done: Boolean(profile.name)},
-    {label: "Education added", done: Boolean(profile.education)},
-    {label: "About added", done: Boolean(profile.about)},
-    {label: "Skills added", done: profile.skills.length > 0},
-    {label: "Interests selected", done: profile.interests.length > 0},
-    {label: "Location added", done: Boolean(profile.location)}
+    { label: "Name added", done: Boolean(profile.name) },
+    { label: "Education added", done: Boolean(profile.education) },
+    { label: "About added", done: Boolean(profile.about) },
+    { label: "Skills added", done: profile.skills.length > 0 },
+    { label: "Interests selected", done: profile.interests.length > 0 },
+    { label: "Location added", done: Boolean(profile.location) }
   ];
 
   const completed = checks.filter(item => item.done).length;
@@ -365,11 +611,9 @@ function renderCompletion() {
 function matchScore(opp) {
   let score = 0;
   const skillsLower = (profile.skills || []).map(s => s.toLowerCase());
-
   opp.tags.forEach(t => {
     if (skillsLower.includes(t.toLowerCase())) score += 2;
   });
-
   if (profile.interests.includes(opp.category)) score += 1;
   return score;
 }
@@ -384,10 +628,7 @@ function renderDiscover() {
     const matchesSearch =
       opp.title.toLowerCase().includes(search) ||
       opp.tags.some(t => t.toLowerCase().includes(search));
-
-    const matchesCategory =
-      category === "all" || opp.category === category;
-
+    const matchesCategory = category === "all" || opp.category === category;
     return matchesSearch && matchesCategory;
   });
 
@@ -396,13 +637,9 @@ function renderDiscover() {
   } else if (sort === "deadline") {
     filtered.sort((a, b) => {
       const aTime = a.deadline === "Rolling" || a.deadline === "Weekly"
-        ? Number.POSITIVE_INFINITY
-        : new Date(a.deadline).getTime();
-
+        ? Number.POSITIVE_INFINITY : new Date(a.deadline).getTime();
       const bTime = b.deadline === "Rolling" || b.deadline === "Weekly"
-        ? Number.POSITIVE_INFINITY
-        : new Date(b.deadline).getTime();
-
+        ? Number.POSITIVE_INFINITY : new Date(b.deadline).getTime();
       return aTime - bTime;
     });
   } else if (sort === "title") {
@@ -417,15 +654,13 @@ function renderGrid(list, containerId) {
   container.innerHTML = "";
 
   if (list.length === 0) {
-    container.innerHTML =
-      '<p class="empty-state">No opportunities match your filters yet.</p>';
+    container.innerHTML = '<p class="empty-state">No opportunities match your filters yet.</p>';
     return;
   }
 
   list.forEach(opp => {
     const card = document.createElement("div");
     card.className = "opp-card";
-
     const isBookmarked = bookmarks.includes(opp.id);
     const score = matchScore(opp);
 
@@ -434,9 +669,7 @@ function renderGrid(list, containerId) {
       <div class="opp-category">${opp.category}</div>
       <h3>${opp.title}</h3>
       <p class="opp-desc">${opp.description}</p>
-      <div class="tag-row">
-        ${opp.tags.map(t => `<span class="tag">${t}</span>`).join("")}
-      </div>
+      <div class="tag-row">${opp.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
       <div class="opp-footer">
         <span class="deadline">📅 ${opp.deadline}</span>
         <div class="opp-actions">
@@ -447,28 +680,50 @@ function renderGrid(list, containerId) {
         </div>
       </div>
     `;
-
     container.appendChild(card);
   });
 
   container.querySelectorAll(".bookmark-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      if (!isLoggedIn) {
-        requireLogin(() => toggleBookmark(parseInt(btn.dataset.id, 10)));
+      if (!currentUser) {
+        openLoginModal();
         return;
       }
-
       toggleBookmark(parseInt(btn.dataset.id, 10));
     });
   });
 }
 
-function toggleBookmark(id) {
-  bookmarks = bookmarks.includes(id)
-    ? bookmarks.filter(b => b !== id)
-    : [...bookmarks, id];
+async function toggleBookmark(id) {
+  if (!currentUser) {
+    openLoginModal();
+    return;
+  }
 
-  localStorage.setItem("scout_bookmarks", JSON.stringify(bookmarks));
+  const isBookmarked = bookmarks.includes(id);
+  let error = null;
+
+  if (isBookmarked) {
+    ({ error } = await supabaseClient
+      .from("bookmarks")
+      .delete()
+      .eq("user_id", currentUser.id)
+      .eq("opportunity_id", id));
+
+    if (!error) bookmarks = bookmarks.filter(b => b !== id);
+  } else {
+    ({ error } = await supabaseClient
+      .from("bookmarks")
+      .insert({ user_id: currentUser.id, opportunity_id: id }));
+
+    if (!error) bookmarks = [...bookmarks, id];
+  }
+
+  if (error) {
+    console.error("Bookmark error:", error);
+    showToast("Could not update bookmark.");
+    return;
+  }
 
   renderDiscover();
   renderDashboard();
@@ -478,20 +733,10 @@ function toggleBookmark(id) {
 // ---------- Dashboard ----------
 function renderDashboard() {
   const statsRow = document.getElementById("statsRow");
-
   statsRow.innerHTML = `
-    <div class="stat-card">
-      <span class="stat-num">${opportunities.length}</span>
-      <span class="stat-label">Total Opportunities</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-num">${bookmarks.length}</span>
-      <span class="stat-label">Bookmarked</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-num">${profile.skills.length}</span>
-      <span class="stat-label">Skills Added</span>
-    </div>
+    <div class="stat-card"><span class="stat-num">${opportunities.length}</span><span class="stat-label">Total Opportunities</span></div>
+    <div class="stat-card"><span class="stat-num">${bookmarks.length}</span><span class="stat-label">Bookmarked</span></div>
+    <div class="stat-card"><span class="stat-num">${profile.skills.length}</span><span class="stat-label">Skills Added</span></div>
   `;
 
   const recommended = [...opportunities]
@@ -515,5 +760,5 @@ function showToast(msg) {
   const toast = document.getElementById("toast");
   toast.textContent = msg;
   toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 2000);
+  setTimeout(() => toast.classList.remove("show"), 2200);
 }

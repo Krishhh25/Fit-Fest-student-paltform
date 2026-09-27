@@ -87,6 +87,7 @@
                 <span id="profileVerified" class="verified-badge">Student</span>
               </div>
               <p id="profileEducation">Add your education details</p>
+              <p id="profileEmail" class="profile-email"></p>
               <p id="profileLocation" class="profile-location">India</p>
             </div>
 
@@ -243,7 +244,30 @@
     </div>
   </div>
 
+  <div id="resetModal" class="modal" hidden>
+    <div class="modal-overlay" id="resetOverlay"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+      <button id="closeResetModal" class="modal-close" aria-label="Close">×</button>
+      <div class="modal-logo">🔐</div>
+      <h2 id="resetTitle">Set a new password</h2>
+      <p class="modal-subtitle">Choose a new password for your Scout account.</p>
+      <form id="resetForm" class="login-form">
+        <label>
+          New Password
+          <input type="password" id="newPassword" minlength="6" required>
+        </label>
+        <label>
+          Confirm Password
+          <input type="password" id="confirmNewPassword" minlength="6" required>
+        </label>
+        <button type="submit" class="primary-btn">Update Password</button>
+      </form>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

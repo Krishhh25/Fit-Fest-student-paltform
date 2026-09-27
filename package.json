@@ -1,7 +1,7 @@
 {
   "name": "scout-opportunity-platform",
-  "version": "1.0.0",
-  "description": "Student Opportunity Discovery Platform",
+  "version": "1.1.0",
+  "description": "Student Opportunity Discovery Platform with Supabase authentication",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
