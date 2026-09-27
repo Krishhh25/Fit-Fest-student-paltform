@@ -58,4 +58,4 @@ SUPABASE_ANON_KEY=your-supabase-anon-key
 
 ## Team
 
-Built by- Krish Shrivastav — FIT-FEST
+Built by- Krish Shrivastav,  FIT-FEST
