@@ -230,6 +230,76 @@ const CATEGORIES = [
 
 
 // ======================================================
+// CATEGORY FILTER / CHECKBOXES  (previously missing — this
+// is what was breaking initialization)
+// ======================================================
+
+function populateCategoryFilter() {
+
+  const select =
+    document.getElementById(
+      "categoryFilter"
+    );
+
+
+  CATEGORIES.forEach(
+    category => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        category;
+
+
+      option.textContent =
+        category;
+
+
+      select.appendChild(
+        option
+      );
+
+    }
+  );
+
+}
+
+
+function populateCategoryCheckboxes() {
+
+  const container =
+    document.getElementById(
+      "categoryCheckboxes"
+    );
+
+
+  container.innerHTML =
+    CATEGORIES.map(
+      category => `
+
+        <label class="checkbox-item">
+
+          <input
+            type="checkbox"
+            id="cat_${category}"
+            value="${category}"
+          >
+
+          ${category}
+
+        </label>
+
+      `
+    ).join("");
+
+}
+
+
+// ======================================================
 // STATE
 // ======================================================
 
