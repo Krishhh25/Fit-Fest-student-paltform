@@ -5,21 +5,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Scout - Find Your Next Opportunity</title>
+  <title>Scout | Student Opportunity Platform</title>
 
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <!-- =====================================================
-       NAVBAR
-       ===================================================== -->
-
+  <!-- NAVBAR -->
   <nav class="navbar">
 
     <div class="logo">
-      🎯 Scout
+      Scout
     </div>
 
     <div class="nav-tabs">
@@ -47,13 +44,9 @@
 
     </div>
 
-
-    <!-- ACCOUNT -->
-
     <div class="account-area">
 
-      <!-- LOGGED OUT -->
-
+      <!-- Logged out -->
       <button
         id="loginBtn"
         class="login-btn"
@@ -61,9 +54,7 @@
         Login
       </button>
 
-
-      <!-- LOGGED IN -->
-
+      <!-- Logged in -->
       <button
         id="userMenuBtn"
         class="user-menu"
@@ -82,13 +73,10 @@
         </span>
 
         <span class="chevron">
-          ⌄
+          ▼
         </span>
 
       </button>
-
-
-      <!-- USER DROPDOWN -->
 
       <div
         id="userDropdown"
@@ -111,18 +99,10 @@
   </nav>
 
 
-
-  <!-- =====================================================
-       MAIN
-       ===================================================== -->
-
   <main>
 
 
-    <!-- ===================================================
-         DISCOVER
-         =================================================== -->
-
+    <!-- DISCOVER -->
     <section
       id="discover"
       class="tab-content active"
@@ -135,8 +115,8 @@
         </h1>
 
         <p>
-          Internships, hackathons, scholarships & more —
-          all in one place.
+          Internships, hackathons, scholarships,
+          courses and more in one place.
         </p>
 
       </div>
@@ -150,7 +130,6 @@
           placeholder="Search by title or skill..."
         >
 
-
         <select id="categoryFilter">
 
           <option value="all">
@@ -158,7 +137,6 @@
           </option>
 
         </select>
-
 
         <select id="sortFilter">
 
@@ -187,11 +165,7 @@
     </section>
 
 
-
-    <!-- ===================================================
-         DASHBOARD
-         =================================================== -->
-
+    <!-- DASHBOARD -->
     <section
       id="dashboard"
       class="tab-content"
@@ -204,8 +178,7 @@
         </h1>
 
         <p>
-          Track your saved opportunities and
-          personalized matches.
+          See your recommendations and saved opportunities.
         </p>
 
       </div>
@@ -219,13 +192,10 @@
 
       <div class="dashboard-columns">
 
-
-        <!-- RECOMMENDED -->
-
         <div>
 
           <h2>
-            ⭐ Recommended for You
+            Recommended for You
           </h2>
 
           <div
@@ -236,12 +206,10 @@
         </div>
 
 
-        <!-- BOOKMARKED -->
-
         <div>
 
           <h2>
-            🔖 Bookmarked
+            Bookmarked
           </h2>
 
           <div
@@ -256,11 +224,7 @@
     </section>
 
 
-
-    <!-- ===================================================
-         PROFILE
-         =================================================== -->
-
+    <!-- PROFILE -->
     <section
       id="profile"
       class="tab-content"
@@ -268,18 +232,12 @@
 
       <div class="profile-page">
 
-
-        <!-- COVER -->
-
         <div class="profile-cover"></div>
 
-
-        <!-- PROFILE HEADER -->
 
         <div class="profile-card">
 
           <div class="profile-top">
-
 
             <div
               id="profileAvatarLarge"
@@ -287,7 +245,6 @@
             >
               ?
             </div>
-
 
             <div class="profile-heading">
 
@@ -303,11 +260,14 @@
 
               </div>
 
-
               <p id="profileEducation">
-                Add your education details
+                Add your education
               </p>
 
+              <p
+                id="profileEmail"
+                class="profile-email"
+              ></p>
 
               <p
                 id="profileLocation"
@@ -317,7 +277,6 @@
               </p>
 
             </div>
-
 
             <button
               id="editProfileBtn"
@@ -329,10 +288,7 @@
           </div>
 
 
-          <!-- PROFILE STATS -->
-
           <div class="profile-stat-grid">
-
 
             <div class="profile-stat">
 
@@ -390,18 +346,9 @@
         </div>
 
 
-
-        <!-- PROFILE CONTENT -->
-
         <div class="profile-layout">
 
-
-          <!-- LEFT -->
-
           <div class="profile-main-column">
-
-
-            <!-- ABOUT -->
 
             <div class="profile-panel">
 
@@ -420,20 +367,16 @@
 
               </div>
 
-
               <p
                 id="profileAbout"
                 class="about-text"
               >
-                Complete your profile to show your
-                education, skills, and interests.
+                Complete your profile to show
+                your information.
               </p>
 
             </div>
 
-
-
-            <!-- SKILLS -->
 
             <div class="profile-panel">
 
@@ -452,7 +395,6 @@
 
               </div>
 
-
               <div
                 id="profileSkills"
                 class="profile-tags"
@@ -460,9 +402,6 @@
 
             </div>
 
-
-
-            <!-- INTERESTS -->
 
             <div class="profile-panel">
 
@@ -481,7 +420,6 @@
 
               </div>
 
-
               <div
                 id="profileInterests"
                 class="profile-tags"
@@ -492,13 +430,7 @@
           </div>
 
 
-
-          <!-- RIGHT -->
-
           <aside class="profile-side-column">
-
-
-            <!-- COMPLETION -->
 
             <div class="profile-panel">
 
@@ -510,7 +442,6 @@
 
               </div>
 
-
               <div class="completion-track">
 
                 <div
@@ -519,7 +450,6 @@
                 ></div>
 
               </div>
-
 
               <div class="completion-label">
 
@@ -533,7 +463,6 @@
 
               </div>
 
-
               <div
                 id="completionItems"
                 class="completion-items"
@@ -542,14 +471,11 @@
             </div>
 
 
-
-            <!-- TIP -->
-
             <div class="profile-panel profile-tip">
 
-              <span class="tip-icon">
-                💡
-              </span>
+              <div class="tip-icon">
+                +
+              </div>
 
               <div>
 
@@ -558,8 +484,8 @@
                 </h3>
 
                 <p>
-                  Add more skills and interests to
-                  improve your opportunity matches.
+                  Add skills and interests to improve
+                  your opportunity matches.
                 </p>
 
               </div>
@@ -575,11 +501,7 @@
     </section>
 
 
-
-    <!-- ===================================================
-         EDIT PROFILE
-         =================================================== -->
-
+    <!-- EDIT PROFILE -->
     <section
       id="profileEdit"
       class="tab-content"
@@ -592,8 +514,7 @@
         </h1>
 
         <p>
-          Keep your profile updated so Scout can
-          personalize opportunities for you.
+          Keep your profile updated.
         </p>
 
       </div>
@@ -604,7 +525,6 @@
         class="profile-form"
       >
 
-
         <label>
 
           Full Name
@@ -613,6 +533,7 @@
             type="text"
             id="pName"
             placeholder="Your name"
+            required
           >
 
         </label>
@@ -659,12 +580,12 @@
 
         <label>
 
-          Skills (comma separated)
+          Skills
 
           <input
             type="text"
             id="pSkills"
-            placeholder="e.g. Python, React, SQL"
+            placeholder="Python, React, SQL"
           >
 
         </label>
@@ -693,7 +614,6 @@
             Save Profile
           </button>
 
-
           <button
             type="button"
             id="cancelProfileEdit"
@@ -711,11 +631,7 @@
   </main>
 
 
-
-  <!-- =====================================================
-       LOGIN / SIGNUP MODAL
-       ===================================================== -->
-
+  <!-- LOGIN / SIGNUP MODAL -->
   <div
     id="loginModal"
     class="modal"
@@ -734,7 +650,6 @@
       aria-modal="true"
     >
 
-
       <button
         id="closeLoginModal"
         class="modal-close"
@@ -744,38 +659,24 @@
 
 
       <div class="modal-logo">
-        🎯
+        S
       </div>
 
 
-      <h2>
-        Welcome to Scout
-      </h2>
-
-
-      <p class="modal-subtitle">
-        Login or create a student account.
-      </p>
-
-
-
-      <!-- AUTH SWITCH -->
-
-      <div class="auth-tabs">
+      <div class="auth-switcher">
 
         <button
-          id="loginTab"
-          class="auth-tab active"
           type="button"
+          class="auth-tab active"
+          data-auth-mode="login"
         >
           Login
         </button>
 
-
         <button
-          id="signupTab"
-          class="auth-tab"
           type="button"
+          class="auth-tab"
+          data-auth-mode="signup"
         >
           Create Account
         </button>
@@ -783,16 +684,25 @@
       </div>
 
 
+      <h2 id="authTitle">
+        Welcome back
+      </h2>
 
-      <!-- =================================================
-           LOGIN FORM
-           ================================================= -->
+
+      <p
+        id="authSubtitle"
+        class="modal-subtitle"
+      >
+        Login to access your Scout account.
+      </p>
+
+
+      <!-- LOGIN -->
 
       <form
         id="loginForm"
         class="login-form"
       >
-
 
         <label>
 
@@ -816,7 +726,7 @@
           <input
             type="password"
             id="loginPassword"
-            placeholder="••••••••"
+            placeholder="Your password"
             autocomplete="current-password"
             required
           >
@@ -826,34 +736,22 @@
 
         <button
           type="submit"
+          id="loginSubmitBtn"
           class="primary-btn"
         >
           Login
         </button>
 
-
-        <button
-          type="button"
-          id="forgotPasswordBtn"
-          class="forgot-btn"
-        >
-          Forgot password?
-        </button>
-
       </form>
 
 
-
-      <!-- =================================================
-           SIGNUP FORM
-           ================================================= -->
+      <!-- SIGNUP -->
 
       <form
         id="signupForm"
         class="login-form"
         hidden
       >
-
 
         <label>
 
@@ -919,6 +817,7 @@
 
         <button
           type="submit"
+          id="signupSubmitBtn"
           class="primary-btn"
         >
           Create Account
@@ -927,7 +826,14 @@
       </form>
 
 
-      <!-- AUTH MESSAGE -->
+      <button
+        type="button"
+        id="forgotPasswordBtn"
+        class="forgot-btn"
+      >
+        Forgot password?
+      </button>
+
 
       <p
         id="authMessage"
@@ -939,10 +845,7 @@
   </div>
 
 
-
-  <!-- =====================================================
-       PASSWORD RESET
-       ===================================================== -->
+  <!-- PASSWORD RESET -->
 
   <div
     id="resetModal"
@@ -956,8 +859,11 @@
     ></div>
 
 
-    <div class="modal-card">
-
+    <div
+      class="modal-card"
+      role="dialog"
+      aria-modal="true"
+    >
 
       <button
         id="closeResetModal"
@@ -968,17 +874,17 @@
 
 
       <div class="modal-logo">
-        🔐
+        S
       </div>
 
 
       <h2>
-        Set a new password
+        Reset password
       </h2>
 
 
       <p class="modal-subtitle">
-        Enter your new password.
+        Enter a new password for your account.
       </p>
 
 
@@ -1029,10 +935,96 @@
   </div>
 
 
+  <!-- MATCH INSIGHTS -->
 
-  <!-- =====================================================
-       TOAST
-       ===================================================== -->
+  <div
+    id="matchInsightsModal"
+    class="modal"
+    hidden
+  >
+
+    <div
+      id="matchInsightsOverlay"
+      class="modal-overlay"
+    ></div>
+
+
+    <div
+      class="match-insights-card"
+      role="dialog"
+      aria-modal="true"
+    >
+
+      <button
+        id="closeMatchInsights"
+        class="modal-close"
+      >
+        ×
+      </button>
+
+
+      <div class="insights-label">
+        SCOUT MATCH INSIGHTS
+      </div>
+
+
+      <h2 id="insightTitle">
+        Opportunity
+      </h2>
+
+
+      <div
+        id="insightMatch"
+        class="insight-match"
+      >
+        0% Match
+      </div>
+
+
+      <div class="insight-section">
+
+        <h3>
+          Why this matches you
+        </h3>
+
+        <div
+          id="matchedReasons"
+          class="insight-list"
+        ></div>
+
+      </div>
+
+
+      <div class="insight-section">
+
+        <h3>
+          Skill gap
+        </h3>
+
+        <div
+          id="missingSkills"
+          class="insight-list"
+        ></div>
+
+      </div>
+
+
+      <div class="insight-next-step">
+
+        <strong>
+          Next step
+        </strong>
+
+        <p id="nextStep">
+          Review the opportunity requirements.
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
 
   <div
     id="toast"
@@ -1040,10 +1032,7 @@
   ></div>
 
 
-
-  <!-- =====================================================
-       SUPABASE
-       ===================================================== -->
+  <!-- SUPABASE -->
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 

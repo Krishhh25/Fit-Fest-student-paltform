@@ -1,6 +1,5 @@
 // ======================================================
 // SCOUT
-// SUPABASE AUTHENTICATION + PROFILE + BOOKMARKS
 // ======================================================
 
 
@@ -17,7 +16,7 @@ const opportunities = [
     tags: ["Python", "Open Source", "Git"],
     deadline: "2026-04-15",
     description:
-      "Contribute to real open-source projects with a stipend, mentored by experienced developers.",
+      "Contribute to real open source projects with experienced mentors.",
     link:
       "https://summerofcode.withgoogle.com/"
   },
@@ -29,7 +28,7 @@ const opportunities = [
     tags: ["Problem Solving", "Full Stack", "Innovation"],
     deadline: "2026-08-01",
     description:
-      "National-level hackathon solving real problem statements.",
+      "National level hackathon solving real world problems.",
     link:
       "https://sih.gov.in/"
   },
@@ -65,7 +64,7 @@ const opportunities = [
     tags: ["DSA", "Java", "Python"],
     deadline: "2026-11-10",
     description:
-      "Timed coding competition testing data structures and algorithms.",
+      "Coding competition focused on data structures and algorithms.",
     link:
       "https://www.hackerrank.com/"
   },
@@ -77,7 +76,7 @@ const opportunities = [
     tags: ["React", "Node.js", "Problem Solving"],
     deadline: "2026-10-05",
     description:
-      "Flipkart's flagship campus program.",
+      "Campus technology competition and career opportunity.",
     link:
       "https://unstop.com/"
   },
@@ -89,7 +88,7 @@ const opportunities = [
     tags: ["React", "JavaScript", "CSS"],
     deadline: "Rolling",
     description:
-      "Professional certificate covering modern front-end development.",
+      "Professional front end development certification.",
     link:
       "https://www.coursera.org/professional-certificates/meta-front-end-developer"
   },
@@ -101,7 +100,7 @@ const opportunities = [
     tags: ["Web3", "Full Stack", "UI/UX"],
     deadline: "Rolling",
     description:
-      "Student and Web3 hackathons.",
+      "Discover student and Web3 hackathons.",
     link:
       "https://devfolio.co/"
   },
@@ -125,7 +124,7 @@ const opportunities = [
     tags: ["Academics"],
     deadline: "2026-12-01",
     description:
-      "Merit-based scholarship.",
+      "Merit based scholarship opportunity.",
     link:
       "https://scholarships.gov.in/"
   },
@@ -137,7 +136,7 @@ const opportunities = [
     tags: ["HTML", "CSS", "JavaScript"],
     deadline: "Rolling",
     description:
-      "Free web design certification.",
+      "Free web development certification.",
     link:
       "https://www.freecodecamp.org/"
   },
@@ -149,7 +148,7 @@ const opportunities = [
     tags: ["Android", "Cloud", "ML"],
     deadline: "2026-11-20",
     description:
-      "Tech conference with hands-on sessions.",
+      "Developer conference with workshops and technical sessions.",
     link:
       "https://gdg.community.dev/"
   },
@@ -161,7 +160,7 @@ const opportunities = [
     tags: ["API", "Backend"],
     deadline: "Rolling",
     description:
-      "API and backend fundamentals certification.",
+      "Learn API development and testing fundamentals.",
     link:
       "https://academy.postman.com/"
   },
@@ -173,7 +172,7 @@ const opportunities = [
     tags: ["DSA", "C++", "Python"],
     deadline: "Weekly",
     description:
-      "Weekly coding contest.",
+      "Weekly coding competition.",
     link:
       "https://www.codechef.com/"
   },
@@ -209,7 +208,7 @@ const opportunities = [
     tags: ["Cloud", "GCP"],
     deadline: "2026-10-25",
     description:
-      "Hands-on Google Cloud learning labs.",
+      "Hands on Google Cloud learning sessions.",
     link:
       "https://cloudonair.withgoogle.com/"
   }
@@ -218,6 +217,7 @@ const opportunities = [
 
 
 const CATEGORIES = [
+
   "Internship",
   "Hackathon",
   "Scholarship",
@@ -225,11 +225,12 @@ const CATEGORIES = [
   "Competition",
   "Workshop",
   "Course"
+
 ];
 
 
 // ======================================================
-// GLOBAL STATE
+// STATE
 // ======================================================
 
 let currentUser = null;
@@ -254,7 +255,7 @@ let bookmarks = [];
 
 
 // ======================================================
-// PAGE LOAD
+// INITIALIZATION
 // ======================================================
 
 document.addEventListener(
@@ -285,138 +286,125 @@ document.addEventListener(
 
 async function initializeAuth() {
 
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await scoutSupabase.auth.getSession();
+  const {
+    data,
+    error
+  } =
+    await scoutSupabase.auth.getSession();
 
 
-    if (error) {
-
-      console.error(
-        "Session error:",
-        error
-      );
-
-      return;
-
-    }
-
-
-    if (data.session) {
-
-      currentUser =
-        data.session.user;
-
-      await loadUserData();
-
-    }
-
-
-    scoutSupabase.auth.onAuthStateChange(
-      async (event, session) => {
-
-        if (
-          event === "SIGNED_IN" &&
-          session
-        ) {
-
-          currentUser =
-            session.user;
-
-          await loadUserData();
-
-          updateAuthUI();
-
-          renderDiscover();
-
-          renderDashboard();
-
-          renderProfilePage();
-
-        }
-
-
-        if (
-          event === "SIGNED_OUT"
-        ) {
-
-          currentUser = null;
-
-          profile = {
-
-            name: "",
-
-            education: "",
-
-            location: "India",
-
-            about: "",
-
-            skills: [],
-
-            interests: []
-
-          };
-
-          bookmarks = [];
-
-          updateAuthUI();
-
-          renderDiscover();
-
-          renderDashboard();
-
-          renderProfilePage();
-
-        }
-
-
-        if (
-          event === "PASSWORD_RECOVERY"
-        ) {
-
-          document.getElementById(
-            "resetModal"
-          ).hidden = false;
-
-          document.body.classList.add(
-            "modal-open"
-          );
-
-        }
-
-      }
-    );
-
-
-    updateAuthUI();
-
-    renderDiscover();
-
-    renderDashboard();
-
-    renderProfilePage();
-
-  }
-
-  catch (error) {
+  if (error) {
 
     console.error(
-      "Authentication initialization failed:",
+      "Session error:",
       error
     );
 
+    return;
+
   }
+
+
+  if (data.session) {
+
+    currentUser =
+      data.session.user;
+
+    await loadUserData();
+
+  }
+
+
+  scoutSupabase.auth.onAuthStateChange(
+    async (event, session) => {
+
+      if (
+        event === "SIGNED_IN" &&
+        session
+      ) {
+
+        currentUser =
+          session.user;
+
+        await loadUserData();
+
+        updateAuthUI();
+
+        renderDiscover();
+
+        renderDashboard();
+
+        renderProfilePage();
+
+      }
+
+
+      if (
+        event === "SIGNED_OUT"
+      ) {
+
+        currentUser = null;
+
+        profile = {
+
+          name: "",
+
+          education: "",
+
+          location: "India",
+
+          about: "",
+
+          skills: [],
+
+          interests: []
+
+        };
+
+        bookmarks = [];
+
+        updateAuthUI();
+
+        renderDiscover();
+
+        renderDashboard();
+
+        renderProfilePage();
+
+      }
+
+
+      if (
+        event === "PASSWORD_RECOVERY"
+      ) {
+
+        document.getElementById(
+          "resetModal"
+        ).hidden = false;
+
+        document.body.classList.add(
+          "modal-open"
+        );
+
+      }
+
+    }
+  );
+
+
+  updateAuthUI();
+
+  renderDiscover();
+
+  renderDashboard();
+
+  renderProfilePage();
 
 }
 
 
 // ======================================================
-// LOAD PROFILE + BOOKMARKS
+// LOAD USER DATA
 // ======================================================
 
 async function loadUserData() {
@@ -426,9 +414,7 @@ async function loadUserData() {
   }
 
 
-  // ----------------------------------------------------
   // PROFILE
-  // ----------------------------------------------------
 
   const {
     data: profileData,
@@ -447,7 +433,7 @@ async function loadUserData() {
   if (profileError) {
 
     console.error(
-      "Profile error:",
+      "Profile load error:",
       profileError
     );
 
@@ -534,12 +520,16 @@ async function loadUserData() {
         profileData.about || "",
 
       skills:
-        Array.isArray(profileData.skills)
+        Array.isArray(
+          profileData.skills
+        )
           ? profileData.skills
           : [],
 
       interests:
-        Array.isArray(profileData.interests)
+        Array.isArray(
+          profileData.interests
+        )
           ? profileData.interests
           : []
 
@@ -548,9 +538,7 @@ async function loadUserData() {
   }
 
 
-  // ----------------------------------------------------
   // BOOKMARKS
-  // ----------------------------------------------------
 
   const {
     data: bookmarkData,
@@ -568,7 +556,7 @@ async function loadUserData() {
   if (bookmarkError) {
 
     console.error(
-      "Bookmark error:",
+      "Bookmark load error:",
       bookmarkError
     );
 
@@ -605,6 +593,7 @@ function updateAuthUI() {
       "loginBtn"
     );
 
+
   const userButton =
     document.getElementById(
       "userMenuBtn"
@@ -618,18 +607,22 @@ function updateAuthUI() {
     userButton.hidden = false;
 
 
-    const name =
+    const displayName =
       profile.name ||
-      currentUser.email?.split("@")[0] ||
+      currentUser.email
+        ?.split("@")[0] ||
       "Student";
 
 
     document.getElementById(
       "navUserName"
     ).textContent =
-      name.length > 18
-        ? name.substring(0, 18) + "..."
-        : name;
+      displayName.length > 18
+        ? displayName.substring(
+            0,
+            18
+          ) + "..."
+        : displayName;
 
 
     document.getElementById(
@@ -651,12 +644,10 @@ function updateAuthUI() {
 
 
 // ======================================================
-// AUTH SETUP
+// AUTHENTICATION
 // ======================================================
 
 function setupAuthentication() {
-
-  // Login button
 
   document.getElementById(
     "loginBtn"
@@ -665,8 +656,6 @@ function setupAuthentication() {
     openLoginModal
   );
 
-
-  // Close
 
   document.getElementById(
     "closeLoginModal"
@@ -684,25 +673,38 @@ function setupAuthentication() {
   );
 
 
-  // Login / Signup switch
+  document.querySelectorAll(
+    ".auth-tab"
+  ).forEach(
+    button => {
 
-  document.getElementById(
-    "loginTab"
-  ).addEventListener(
-    "click",
-    showLoginForm
+      button.addEventListener(
+        "click",
+        () => {
+
+          const mode =
+            button.dataset.authMode;
+
+          if (
+            mode === "login"
+          ) {
+
+            showLoginForm();
+
+          }
+
+          else {
+
+            showSignupForm();
+
+          }
+
+        }
+      );
+
+    }
   );
 
-
-  document.getElementById(
-    "signupTab"
-  ).addEventListener(
-    "click",
-    showSignupForm
-  );
-
-
-  // Forms
 
   document.getElementById(
     "loginForm"
@@ -720,8 +722,6 @@ function setupAuthentication() {
   );
 
 
-  // Forgot password
-
   document.getElementById(
     "forgotPasswordBtn"
   ).addEventListener(
@@ -729,34 +729,6 @@ function setupAuthentication() {
     forgotPassword
   );
 
-
-  // Password reset
-
-  document.getElementById(
-    "resetForm"
-  ).addEventListener(
-    "submit",
-    updatePassword
-  );
-
-
-  document.getElementById(
-    "closeResetModal"
-  ).addEventListener(
-    "click",
-    closeResetModal
-  );
-
-
-  document.getElementById(
-    "resetOverlay"
-  ).addEventListener(
-    "click",
-    closeResetModal
-  );
-
-
-  // User menu
 
   document.getElementById(
     "userMenuBtn"
@@ -779,8 +751,6 @@ function setupAuthentication() {
   );
 
 
-  // Profile
-
   document.getElementById(
     "dropdownProfile"
   ).addEventListener(
@@ -791,13 +761,13 @@ function setupAuthentication() {
         "userDropdown"
       ).hidden = true;
 
-      showTab("profile");
+      showTab(
+        "profile"
+      );
 
     }
   );
 
-
-  // Logout
 
   document.getElementById(
     "dropdownLogout"
@@ -806,8 +776,6 @@ function setupAuthentication() {
     logout
   );
 
-
-  // Close dropdown
 
   document.addEventListener(
     "click",
@@ -834,6 +802,50 @@ function setupAuthentication() {
     }
   );
 
+
+  // PASSWORD RESET
+
+  document.getElementById(
+    "resetForm"
+  ).addEventListener(
+    "submit",
+    updatePassword
+  );
+
+
+  document.getElementById(
+    "closeResetModal"
+  ).addEventListener(
+    "click",
+    closeResetModal
+  );
+
+
+  document.getElementById(
+    "resetOverlay"
+  ).addEventListener(
+    "click",
+    closeResetModal
+  );
+
+
+  // MATCH INSIGHTS
+
+  document.getElementById(
+    "closeMatchInsights"
+  ).addEventListener(
+    "click",
+    closeMatchInsights
+  );
+
+
+  document.getElementById(
+    "matchInsightsOverlay"
+  ).addEventListener(
+    "click",
+    closeMatchInsights
+  );
+
 }
 
 
@@ -844,7 +856,6 @@ function setupAuthentication() {
 async function login(event) {
 
   event.preventDefault();
-
 
   clearAuthMessage();
 
@@ -861,22 +872,13 @@ async function login(event) {
     ).value;
 
 
-  if (!email) {
+  if (
+    !email ||
+    !password
+  ) {
 
     setAuthMessage(
-      "Enter your email.",
-      true
-    );
-
-    return;
-
-  }
-
-
-  if (!password) {
-
-    setAuthMessage(
-      "Enter your password.",
+      "Enter your email and password.",
       true
     );
 
@@ -886,7 +888,9 @@ async function login(event) {
 
 
   const button =
-    event.submitter;
+    document.getElementById(
+      "loginSubmitBtn"
+    );
 
 
   button.disabled = true;
@@ -918,7 +922,6 @@ async function login(event) {
   if (error) {
 
     console.error(
-      "Login error:",
       error
     );
 
@@ -950,24 +953,25 @@ async function login(event) {
 
   renderDiscover();
 
-  showTab("profile");
+  showTab(
+    "profile"
+  );
 
 
   showToast(
-    "Welcome back!"
+    "Welcome back."
   );
 
 }
 
 
 // ======================================================
-// SIGN UP
+// SIGNUP
 // ======================================================
 
 async function signup(event) {
 
   event.preventDefault();
-
 
   clearAuthMessage();
 
@@ -1008,18 +1012,6 @@ async function signup(event) {
   }
 
 
-  if (!email) {
-
-    setAuthMessage(
-      "Enter your email.",
-      true
-    );
-
-    return;
-
-  }
-
-
   if (
     password.length < 6
   ) {
@@ -1050,7 +1042,9 @@ async function signup(event) {
 
 
   const button =
-    event.submitter;
+    document.getElementById(
+      "signupSubmitBtn"
+    );
 
 
   button.disabled = true;
@@ -1093,7 +1087,6 @@ async function signup(event) {
   if (error) {
 
     console.error(
-      "Signup error:",
       error
     );
 
@@ -1108,32 +1101,12 @@ async function signup(event) {
   }
 
 
-  /*
-    Email confirmation OFF:
-    session exists immediately.
-  */
-
-  if (data.session) {
+  if (
+    data.session
+  ) {
 
     currentUser =
       data.user;
-
-
-    profile = {
-
-      name,
-
-      education: "",
-
-      location: "India",
-
-      about: "",
-
-      skills: [],
-
-      interests: []
-
-    };
 
 
     const {
@@ -1162,10 +1135,11 @@ async function signup(event) {
         });
 
 
-    if (profileError) {
+    if (
+      profileError
+    ) {
 
       console.error(
-        "Profile creation error:",
         profileError
       );
 
@@ -1185,20 +1159,18 @@ async function signup(event) {
 
     renderDiscover();
 
-    showTab("profile");
+    showTab(
+      "profile"
+    );
 
 
     showToast(
-      "Account created successfully!"
+      "Account created."
     );
 
   }
 
   else {
-
-    /*
-      Email confirmation ON.
-    */
 
     setAuthMessage(
       "Account created. Check your email to confirm your account."
@@ -1241,25 +1213,15 @@ async function forgotPassword() {
   } =
     await scoutSupabase.auth
       .resetPasswordForEmail(
-
         email,
-
         {
-
           redirectTo:
             window.location.origin
-
         }
-
       );
 
 
   if (error) {
-
-    console.error(
-      error
-    );
-
 
     setAuthMessage(
       error.message,
@@ -1272,17 +1234,19 @@ async function forgotPassword() {
 
 
   setAuthMessage(
-    "Password reset email sent. Check your inbox."
+    "Password reset email sent."
   );
 
 }
 
 
 // ======================================================
-// UPDATE PASSWORD
+// PASSWORD UPDATE
 // ======================================================
 
-async function updatePassword(event) {
+async function updatePassword(
+  event
+) {
 
   event.preventDefault();
 
@@ -1337,9 +1301,8 @@ async function updatePassword(event) {
 
   closeResetModal();
 
-
   showToast(
-    "Password updated successfully!"
+    "Password updated."
   );
 
 }
@@ -1371,6 +1334,8 @@ async function logout() {
 
   currentUser = null;
 
+  bookmarks = [];
+
 
   profile = {
 
@@ -1389,17 +1354,11 @@ async function logout() {
   };
 
 
-  bookmarks = [];
-
-
-  document.getElementById(
-    "userDropdown"
-  ).hidden = true;
-
-
   updateAuthUI();
 
-  showTab("discover");
+  showTab(
+    "discover"
+  );
 
   renderDiscover();
 
@@ -1407,9 +1366,8 @@ async function logout() {
 
   renderProfilePage();
 
-
   showToast(
-    "Logged out successfully."
+    "Logged out."
   );
 
 }
@@ -1453,20 +1411,6 @@ function closeLoginModal() {
 }
 
 
-function closeResetModal() {
-
-  document.getElementById(
-    "resetModal"
-  ).hidden = true;
-
-
-  document.body.classList.remove(
-    "modal-open"
-  );
-
-}
-
-
 function showLoginForm() {
 
   document.getElementById(
@@ -1479,18 +1423,36 @@ function showLoginForm() {
   ).hidden = true;
 
 
-  document.getElementById(
-    "loginTab"
-  ).classList.add(
-    "active"
+  document.querySelectorAll(
+    ".auth-tab"
+  ).forEach(
+    button => {
+
+      button.classList.toggle(
+        "active",
+        button.dataset.authMode ===
+        "login"
+      );
+
+    }
   );
 
 
   document.getElementById(
-    "signupTab"
-  ).classList.remove(
-    "active"
-  );
+    "authTitle"
+  ).textContent =
+    "Welcome back";
+
+
+  document.getElementById(
+    "authSubtitle"
+  ).textContent =
+    "Login to access your Scout account.";
+
+
+  document.getElementById(
+    "forgotPasswordBtn"
+  ).hidden = false;
 
 
   clearAuthMessage();
@@ -1510,18 +1472,36 @@ function showSignupForm() {
   ).hidden = false;
 
 
-  document.getElementById(
-    "loginTab"
-  ).classList.remove(
-    "active"
+  document.querySelectorAll(
+    ".auth-tab"
+  ).forEach(
+    button => {
+
+      button.classList.toggle(
+        "active",
+        button.dataset.authMode ===
+        "signup"
+      );
+
+    }
   );
 
 
   document.getElementById(
-    "signupTab"
-  ).classList.add(
-    "active"
-  );
+    "authTitle"
+  ).textContent =
+    "Create your account";
+
+
+  document.getElementById(
+    "authSubtitle"
+  ).textContent =
+    "Join Scout and personalize your opportunities.";
+
+
+  document.getElementById(
+    "forgotPasswordBtn"
+  ).hidden = true;
 
 
   clearAuthMessage();
@@ -1529,13 +1509,9 @@ function showSignupForm() {
 }
 
 
-// ======================================================
-// AUTH MESSAGES
-// ======================================================
-
 function setAuthMessage(
   message,
-  error = false
+  isError = false
 ) {
 
   const element =
@@ -1549,7 +1525,7 @@ function setAuthMessage(
 
 
   element.className =
-    error
+    isError
       ? "auth-message error"
       : "auth-message success";
 
@@ -1570,6 +1546,20 @@ function clearAuthMessage() {
 
   element.className =
     "auth-message";
+
+}
+
+
+function closeResetModal() {
+
+  document.getElementById(
+    "resetModal"
+  ).hidden = true;
+
+
+  document.body.classList.remove(
+    "modal-open"
+  );
 
 }
 
@@ -1596,8 +1586,8 @@ function setupTabs() {
           if (
             !currentUser &&
             (
-              tab === "profile" ||
-              tab === "dashboard"
+              tab === "dashboard" ||
+              tab === "profile"
             )
           ) {
 
@@ -1608,7 +1598,9 @@ function setupTabs() {
           }
 
 
-          showTab(tab);
+          showTab(
+            tab
+          );
 
         }
       );
@@ -1649,15 +1641,15 @@ function showTab(
   );
 
 
-  const tabButton =
+  const button =
     document.querySelector(
       `.tab-btn[data-tab="${tabId}"]`
     );
 
 
-  if (tabButton) {
+  if (button) {
 
-    tabButton.classList.add(
+    button.classList.add(
       "active"
     );
 
@@ -1680,7 +1672,8 @@ function showTab(
 
 
   if (
-    tabId === "dashboard"
+    tabId ===
+    "dashboard"
   ) {
 
     renderDashboard();
@@ -1689,7 +1682,8 @@ function showTab(
 
 
   if (
-    tabId === "profile"
+    tabId ===
+    "profile"
   ) {
 
     renderProfilePage();
@@ -1698,7 +1692,8 @@ function showTab(
 
 
   if (
-    tabId === "profileEdit"
+    tabId ===
+    "profileEdit"
   ) {
 
     loadProfileForm();
@@ -1709,7 +1704,7 @@ function showTab(
 
 
 // ======================================================
-// PROFILE EVENTS
+// PROFILE
 // ======================================================
 
 function setupProfileEvents() {
@@ -1726,7 +1721,10 @@ function setupProfileEvents() {
     "cancelProfileEdit"
   ).addEventListener(
     "click",
-    () => showTab("profile")
+    () =>
+      showTab(
+        "profile"
+      )
   );
 
 
@@ -1734,22 +1732,7 @@ function setupProfileEvents() {
     "editProfileBtn"
   ).addEventListener(
     "click",
-    () => {
-
-      if (!currentUser) {
-
-        openLoginModal();
-
-        return;
-
-      }
-
-
-      showTab(
-        "profileEdit"
-      );
-
-    }
+    openProfileEdit
   );
 
 
@@ -1757,22 +1740,7 @@ function setupProfileEvents() {
     "editAboutBtn"
   ).addEventListener(
     "click",
-    () => {
-
-      if (!currentUser) {
-
-        openLoginModal();
-
-        return;
-
-      }
-
-
-      showTab(
-        "profileEdit"
-      );
-
-    }
+    openProfileEdit
   );
 
 
@@ -1780,22 +1748,7 @@ function setupProfileEvents() {
     "editSkillsBtn"
   ).addEventListener(
     "click",
-    () => {
-
-      if (!currentUser) {
-
-        openLoginModal();
-
-        return;
-
-      }
-
-
-      showTab(
-        "profileEdit"
-      );
-
-    }
+    openProfileEdit
   );
 
 
@@ -1803,137 +1756,25 @@ function setupProfileEvents() {
     "editInterestsBtn"
   ).addEventListener(
     "click",
-    () => {
-
-      if (!currentUser) {
-
-        openLoginModal();
-
-        return;
-
-      }
-
-
-      showTab(
-        "profileEdit"
-      );
-
-    }
+    openProfileEdit
   );
 
 }
 
 
-// ======================================================
-// CATEGORY FILTER
-// ======================================================
+function openProfileEdit() {
 
-function populateCategoryFilter() {
+  if (!currentUser) {
 
-  const select =
-    document.getElementById(
-      "categoryFilter"
-    );
+    openLoginModal();
 
+    return;
 
-  CATEGORIES.forEach(
-    category => {
-
-      const option =
-        document.createElement(
-          "option"
-        );
+  }
 
 
-      option.value =
-        category;
-
-
-      option.textContent =
-        category;
-
-
-      select.appendChild(
-        option
-      );
-
-    }
-  );
-
-}
-
-
-function populateCategoryCheckboxes() {
-
-  const container =
-    document.getElementById(
-      "categoryCheckboxes"
-    );
-
-
-  CATEGORIES.forEach(
-    category => {
-
-      const label =
-        document.createElement(
-          "label"
-        );
-
-
-      label.className =
-        "checkbox-item";
-
-
-      label.innerHTML = `
-
-        <input
-          type="checkbox"
-          id="cat_${category}"
-          value="${category}"
-        >
-
-        ${category}
-
-      `;
-
-
-      container.appendChild(
-        label
-      );
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// SEARCH
-// ======================================================
-
-function setupSearch() {
-
-  document.getElementById(
-    "searchInput"
-  ).addEventListener(
-    "input",
-    renderDiscover
-  );
-
-
-  document.getElementById(
-    "categoryFilter"
-  ).addEventListener(
-    "change",
-    renderDiscover
-  );
-
-
-  document.getElementById(
-    "sortFilter"
-  ).addEventListener(
-    "change",
-    renderDiscover
+  showTab(
+    "profileEdit"
   );
 
 }
@@ -2001,10 +1842,6 @@ function loadProfileForm() {
 }
 
 
-// ======================================================
-// SAVE PROFILE
-// ======================================================
-
 async function saveProfile(
   event
 ) {
@@ -2021,69 +1858,51 @@ async function saveProfile(
   }
 
 
-  const name =
-    document.getElementById(
-      "pName"
-    ).value.trim();
+  const newProfile = {
 
+    name:
+      document.getElementById(
+        "pName"
+      ).value.trim(),
 
-  const education =
-    document.getElementById(
-      "pEducation"
-    ).value.trim();
-
-
-  const location =
-    document.getElementById(
-      "pLocation"
-    ).value.trim();
-
-
-  const about =
-    document.getElementById(
-      "pAbout"
-    ).value.trim();
-
-
-  const skills =
-    document.getElementById(
-      "pSkills"
-    ).value
-      .split(",")
-      .map(
-        value =>
-          value.trim()
-      )
-      .filter(
-        Boolean
-      );
-
-
-  const interests =
-    Array.from(
-      document.querySelectorAll(
-        "#categoryCheckboxes input:checked"
-      )
-    ).map(
-      checkbox =>
-        checkbox.value
-    );
-
-
-  profile = {
-
-    name,
-
-    education,
+    education:
+      document.getElementById(
+        "pEducation"
+      ).value.trim(),
 
     location:
-      location || "India",
+      document.getElementById(
+        "pLocation"
+      ).value.trim() ||
+      "India",
 
-    about,
+    about:
+      document.getElementById(
+        "pAbout"
+      ).value.trim(),
 
-    skills,
+    skills:
+      document.getElementById(
+        "pSkills"
+      ).value
+        .split(",")
+        .map(
+          value =>
+            value.trim()
+        )
+        .filter(
+          Boolean
+        ),
 
-    interests
+    interests:
+      Array.from(
+        document.querySelectorAll(
+          "#categoryCheckboxes input:checked"
+        )
+      ).map(
+        checkbox =>
+          checkbox.value
+      )
 
   };
 
@@ -2098,23 +1917,7 @@ async function saveProfile(
         id:
           currentUser.id,
 
-        name:
-          profile.name,
-
-        education:
-          profile.education,
-
-        location:
-          profile.location,
-
-        about:
-          profile.about,
-
-        skills:
-          profile.skills,
-
-        interests:
-          profile.interests,
+        ...newProfile,
 
         updated_at:
           new Date().toISOString()
@@ -2125,10 +1928,8 @@ async function saveProfile(
   if (error) {
 
     console.error(
-      "Save profile error:",
       error
     );
-
 
     showToast(
       error.message
@@ -2139,19 +1940,25 @@ async function saveProfile(
   }
 
 
+  profile =
+    newProfile;
+
+
   updateAuthUI();
 
   renderProfilePage();
 
-  renderDashboard();
-
   renderDiscover();
 
-  showTab("profile");
+  renderDashboard();
+
+  showTab(
+    "profile"
+  );
 
 
   showToast(
-    "Profile saved successfully!"
+    "Profile saved."
   );
 
 }
@@ -2163,16 +1970,11 @@ async function saveProfile(
 
 function getInitial() {
 
-  if (!profile.name) {
-
-    return "?";
-
-  }
-
-
   return profile.name
-    .charAt(0)
-    .toUpperCase();
+    ? profile.name
+        .charAt(0)
+        .toUpperCase()
+    : "?";
 
 }
 
@@ -2196,7 +1998,14 @@ function renderProfilePage() {
     "profileEducation"
   ).textContent =
     profile.education ||
-    "Add your education details";
+    "Add your education";
+
+
+  document.getElementById(
+    "profileEmail"
+  ).textContent =
+    currentUser?.email ||
+    "";
 
 
   document.getElementById(
@@ -2210,7 +2019,7 @@ function renderProfilePage() {
     "profileAbout"
   ).textContent =
     profile.about ||
-    "Complete your profile to show your education, skills, and interests.";
+    "Complete your profile to show your information.";
 
 
   document.getElementById(
@@ -2249,14 +2058,14 @@ function renderProfilePage() {
   renderProfileTags(
     "profileSkills",
     profile.skills,
-    "No skills added yet."
+    "No skills added."
   );
 
 
   renderProfileTags(
     "profileInterests",
     profile.interests,
-    "No interests selected yet."
+    "No interests selected."
   );
 
 
@@ -2264,10 +2073,6 @@ function renderProfilePage() {
 
 }
 
-
-// ======================================================
-// PROFILE TAGS
-// ======================================================
 
 function renderProfileTags(
   containerId,
@@ -2344,49 +2149,57 @@ function renderProfileTags(
 
 function renderCompletion() {
 
-  const checks = [
+  const items = [
 
     {
-      label: "Name added",
+      label: "Name",
       done:
-        Boolean(profile.name)
+        Boolean(
+          profile.name
+        )
     },
 
     {
-      label: "Education added",
+      label: "Education",
       done:
-        Boolean(profile.education)
+        Boolean(
+          profile.education
+        )
     },
 
     {
-      label: "About added",
+      label: "About",
       done:
-        Boolean(profile.about)
+        Boolean(
+          profile.about
+        )
     },
 
     {
-      label: "Skills added",
+      label: "Skills",
       done:
         profile.skills.length > 0
     },
 
     {
-      label: "Interests selected",
+      label: "Interests",
       done:
         profile.interests.length > 0
     },
 
     {
-      label: "Location added",
+      label: "Location",
       done:
-        Boolean(profile.location)
+        Boolean(
+          profile.location
+        )
     }
 
   ];
 
 
-  const completed =
-    checks.filter(
+  const complete =
+    items.filter(
       item =>
         item.done
     ).length;
@@ -2394,9 +2207,10 @@ function renderCompletion() {
 
   const percentage =
     Math.round(
-      completed /
-      checks.length *
-      100
+      (
+        complete /
+        items.length
+      ) * 100
     );
 
 
@@ -2415,28 +2229,28 @@ function renderCompletion() {
   document.getElementById(
     "completionItems"
   ).innerHTML =
-    checks
-      .map(
-        item => `
+    items.map(
+      item => `
 
-          <div
-            class="completion-item
-            ${item.done ? "done" : ""}"
+        <div class="
+          completion-item
+          ${item.done ? "done" : ""}
+        ">
+
+          <span>
+            ${item.label}
+          </span>
+
+          <span
+            class="completion-check"
           >
+            ${item.done ? "✓" : "—"}
+          </span>
 
-            <span>
-              ${item.label}
-            </span>
+        </div>
 
-            <span class="completion-check">
-              ${item.done ? "✓" : "—"}
-            </span>
-
-          </div>
-
-        `
-      )
-      .join("");
+      `
+    ).join("");
 
 }
 
@@ -2452,7 +2266,7 @@ function matchScore(
   let score = 0;
 
 
-  const skills =
+  const studentSkills =
     profile.skills.map(
       skill =>
         skill.toLowerCase()
@@ -2463,7 +2277,7 @@ function matchScore(
     tag => {
 
       if (
-        skills.includes(
+        studentSkills.includes(
           tag.toLowerCase()
         )
       ) {
@@ -2493,8 +2307,76 @@ function matchScore(
 
 
 // ======================================================
-// DISCOVER
+// MATCH PERCENTAGE
 // ======================================================
+
+function matchPercentage(
+  opportunity
+) {
+
+  const score =
+    matchScore(
+      opportunity
+    );
+
+
+  const maximum =
+    opportunity.tags.length * 2 + 1;
+
+
+  if (
+    maximum === 0
+  ) {
+
+    return 0;
+
+  }
+
+
+  return Math.min(
+    100,
+    Math.round(
+      (
+        score /
+        maximum
+      ) * 100
+    )
+  );
+
+}
+
+
+// ======================================================
+// SEARCH
+// ======================================================
+
+function setupSearch() {
+
+  document.getElementById(
+    "searchInput"
+  ).addEventListener(
+    "input",
+    renderDiscover
+  );
+
+
+  document.getElementById(
+    "categoryFilter"
+  ).addEventListener(
+    "change",
+    renderDiscover
+  );
+
+
+  document.getElementById(
+    "sortFilter"
+  ).addEventListener(
+    "change",
+    renderDiscover
+  );
+
+}
+
 
 function renderDiscover() {
 
@@ -2502,6 +2384,7 @@ function renderDiscover() {
     document.getElementById(
       "searchInput"
     ).value
+      .trim()
       .toLowerCase();
 
 
@@ -2521,13 +2404,15 @@ function renderDiscover() {
     opportunities.filter(
       opportunity => {
 
-        const matchesSearch =
+        const titleMatch =
           opportunity.title
             .toLowerCase()
             .includes(
               search
-            ) ||
+            );
 
+
+        const tagMatch =
           opportunity.tags.some(
             tag =>
               tag
@@ -2538,15 +2423,18 @@ function renderDiscover() {
           );
 
 
-        const matchesCategory =
+        const categoryMatch =
           category === "all" ||
           opportunity.category ===
             category;
 
 
         return (
-          matchesSearch &&
-          matchesCategory
+          (
+            titleMatch ||
+            tagMatch
+          ) &&
+          categoryMatch
         );
 
       }
@@ -2554,7 +2442,8 @@ function renderDiscover() {
 
 
   if (
-    sort === "recommended"
+    sort ===
+    "recommended"
   ) {
 
     filtered.sort(
@@ -2567,7 +2456,8 @@ function renderDiscover() {
 
 
   else if (
-    sort === "deadline"
+    sort ===
+    "deadline"
   ) {
 
     filtered.sort(
@@ -2575,8 +2465,10 @@ function renderDiscover() {
 
         const aDate =
           (
-            a.deadline === "Rolling" ||
-            a.deadline === "Weekly"
+            a.deadline ===
+              "Rolling" ||
+            a.deadline ===
+              "Weekly"
           )
             ? Infinity
             : new Date(
@@ -2586,8 +2478,10 @@ function renderDiscover() {
 
         const bDate =
           (
-            b.deadline === "Rolling" ||
-            b.deadline === "Weekly"
+            b.deadline ===
+              "Rolling" ||
+            b.deadline ===
+              "Weekly"
           )
             ? Infinity
             : new Date(
@@ -2607,7 +2501,8 @@ function renderDiscover() {
 
 
   else if (
-    sort === "title"
+    sort ===
+    "title"
   ) {
 
     filtered.sort(
@@ -2652,9 +2547,7 @@ function renderGrid(
     container.innerHTML = `
 
       <p class="empty-state">
-
-        No opportunities match your filters yet.
-
+        No opportunities found.
       </p>
 
     `;
@@ -2695,12 +2588,14 @@ function renderGrid(
           score > 0
             ? `
 
-              <span class="match-badge">
+              <span
+                class="match-badge"
+              >
 
                 ${
                   score >= 3
-                    ? "🔥 Great match"
-                    : "✨ Match"
+                    ? "Great match"
+                    : "Match"
                 }
 
               </span>
@@ -2749,22 +2644,22 @@ function renderGrid(
 
         <div class="opp-footer">
 
-
           <span class="deadline">
 
-            📅 ${opportunity.deadline}
+            ${opportunity.deadline}
 
           </span>
 
 
           <div class="opp-actions">
 
-
             <button
-              class="bookmark-btn
-              ${bookmarked ? "active" : ""}"
-
+              class="
+                bookmark-btn
+                ${bookmarked ? "active" : ""}
+              "
               data-id="${opportunity.id}"
+              title="Bookmark"
             >
 
               ${
@@ -2783,14 +2678,31 @@ function renderGrid(
               class="view-link"
             >
 
-              View →
+              View
 
             </a>
-
 
           </div>
 
         </div>
+
+
+        ${
+          currentUser
+            ? `
+
+              <button
+                class="match-insights-btn"
+                data-insight-id="${opportunity.id}"
+              >
+
+                Why this matches me
+
+              </button>
+
+            `
+            : ""
+        }
 
       `;
 
@@ -2819,6 +2731,44 @@ function renderGrid(
                 button.dataset.id
               )
             );
+
+          }
+        );
+
+      }
+    );
+
+
+  container
+    .querySelectorAll(
+      ".match-insights-btn"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            const opportunity =
+              opportunities.find(
+                item =>
+                  item.id ===
+                  Number(
+                    button.dataset.insightId
+                  )
+              );
+
+
+            if (
+              opportunity
+            ) {
+
+              openMatchInsights(
+                opportunity
+              );
+
+            }
 
           }
         );
@@ -2874,11 +2824,6 @@ async function toggleBookmark(
 
     if (error) {
 
-      console.error(
-        error
-      );
-
-
       showToast(
         error.message
       );
@@ -2891,7 +2836,8 @@ async function toggleBookmark(
     bookmarks =
       bookmarks.filter(
         id =>
-          id !== opportunityId
+          id !==
+          opportunityId
       );
 
   }
@@ -2915,11 +2861,6 @@ async function toggleBookmark(
 
 
     if (error) {
-
-      console.error(
-        error
-      );
-
 
       showToast(
         error.message
@@ -2959,15 +2900,11 @@ function renderDashboard() {
     <div class="stat-card">
 
       <span class="stat-num">
-
         ${opportunities.length}
-
       </span>
 
       <span class="stat-label">
-
         Total Opportunities
-
       </span>
 
     </div>
@@ -2976,15 +2913,11 @@ function renderDashboard() {
     <div class="stat-card">
 
       <span class="stat-num">
-
         ${bookmarks.length}
-
       </span>
 
       <span class="stat-label">
-
         Bookmarked
-
       </span>
 
     </div>
@@ -2993,15 +2926,11 @@ function renderDashboard() {
     <div class="stat-card">
 
       <span class="stat-num">
-
         ${profile.skills.length}
-
       </span>
 
       <span class="stat-label">
-
         Skills Added
-
       </span>
 
     </div>
@@ -3029,30 +2958,288 @@ function renderDashboard() {
 
 
   renderGrid(
-
     recommended.length
       ? recommended
       : opportunities.slice(
           0,
           4
         ),
-
     "recommendedList"
-
   );
 
 
   renderGrid(
-
     opportunities.filter(
       opportunity =>
         bookmarks.includes(
           opportunity.id
         )
     ),
-
     "bookmarkedList"
+  );
 
+}
+
+
+// ======================================================
+// MATCH INSIGHTS
+// ======================================================
+
+function getMatchInsights(
+  opportunity
+) {
+
+  const studentSkills =
+    profile.skills.map(
+      skill =>
+        skill.toLowerCase()
+    );
+
+
+  const matchedSkills =
+    opportunity.tags.filter(
+      tag =>
+        studentSkills.includes(
+          tag.toLowerCase()
+        )
+    );
+
+
+  const missingSkills =
+    opportunity.tags.filter(
+      tag =>
+        !studentSkills.includes(
+          tag.toLowerCase()
+        )
+    );
+
+
+  const categoryMatch =
+    profile.interests.includes(
+      opportunity.category
+    );
+
+
+  return {
+
+    matchedSkills,
+
+    missingSkills,
+
+    categoryMatch
+
+  };
+
+}
+
+
+function openMatchInsights(
+  opportunity
+) {
+
+  const insights =
+    getMatchInsights(
+      opportunity
+    );
+
+
+  const percentage =
+    matchPercentage(
+      opportunity
+    );
+
+
+  document.getElementById(
+    "insightTitle"
+  ).textContent =
+    opportunity.title;
+
+
+  document.getElementById(
+    "insightMatch"
+  ).textContent =
+    percentage +
+    "% Match";
+
+
+  const matchedContainer =
+    document.getElementById(
+      "matchedReasons"
+    );
+
+
+  matchedContainer.innerHTML =
+    "";
+
+
+  insights.matchedSkills.forEach(
+    skill => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "insight-item match";
+
+
+      item.textContent =
+        `${skill} matches your skills`;
+
+
+      matchedContainer.appendChild(
+        item
+      );
+
+    }
+  );
+
+
+  if (
+    insights.categoryMatch
+  ) {
+
+    const item =
+      document.createElement(
+        "div"
+      );
+
+
+    item.className =
+      "insight-item match";
+
+
+    item.textContent =
+      `${opportunity.category} matches your interests`;
+
+
+    matchedContainer.appendChild(
+      item
+    );
+
+  }
+
+
+  if (
+    !matchedContainer.children.length
+  ) {
+
+    matchedContainer.innerHTML = `
+
+      <div class="insight-item">
+
+        No direct matches yet.
+
+      </div>
+
+    `;
+
+  }
+
+
+  const missingContainer =
+    document.getElementById(
+      "missingSkills"
+    );
+
+
+  missingContainer.innerHTML =
+    "";
+
+
+  if (
+    insights.missingSkills.length ===
+    0
+  ) {
+
+    missingContainer.innerHTML = `
+
+      <div class="no-gap">
+
+        You match all listed skills.
+
+      </div>
+
+    `;
+
+  }
+
+  else {
+
+    insights.missingSkills.forEach(
+      skill => {
+
+        const item =
+          document.createElement(
+            "div"
+          );
+
+
+        item.className =
+          "insight-item missing";
+
+
+        item.textContent =
+          skill;
+
+
+        missingContainer.appendChild(
+          item
+        );
+
+      }
+    );
+
+  }
+
+
+  const nextStep =
+    document.getElementById(
+      "nextStep"
+    );
+
+
+  if (
+    insights.missingSkills.length ===
+    0
+  ) {
+
+    nextStep.textContent =
+      "You already match the listed skills. Review the opportunity requirements and apply if it fits your goals.";
+
+  }
+
+  else {
+
+    nextStep.textContent =
+      `Consider improving ${insights.missingSkills.join(", ")} before applying.`;
+
+  }
+
+
+  document.getElementById(
+    "matchInsightsModal"
+  ).hidden = false;
+
+
+  document.body.classList.add(
+    "modal-open"
+  );
+
+}
+
+
+function closeMatchInsights() {
+
+  document.getElementById(
+    "matchInsightsModal"
+  ).hidden = true;
+
+
+  document.body.classList.remove(
+    "modal-open"
   );
 
 }
