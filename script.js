@@ -1,11 +1,12 @@
 // ======================================================
-// SCOUT - SUPABASE VERSION
+// SCOUT
+// SUPABASE AUTHENTICATION + PROFILE + BOOKMARKS
 // ======================================================
 
 
-// ------------------------------------------------------
+// ======================================================
 // OPPORTUNITIES
-// ------------------------------------------------------
+// ======================================================
 
 const opportunities = [
 
@@ -52,7 +53,7 @@ const opportunities = [
     tags: ["Cloud", "AWS", "Networking"],
     deadline: "Rolling",
     description:
-      "Free cloud computing courses for students getting started with AWS.",
+      "Free cloud computing courses for students.",
     link:
       "https://aws.amazon.com/education/awseducate/"
   },
@@ -100,7 +101,7 @@ const opportunities = [
     tags: ["Web3", "Full Stack", "UI/UX"],
     deadline: "Rolling",
     description:
-      "Calendar of student and Web3 hackathons.",
+      "Student and Web3 hackathons.",
     link:
       "https://devfolio.co/"
   },
@@ -112,7 +113,7 @@ const opportunities = [
     tags: ["Science", "Research"],
     deadline: "2026-09-30",
     description:
-      "Government scholarship supporting students pursuing science education.",
+      "Government scholarship supporting students.",
     link:
       "https://online-inspire.gov.in/"
   },
@@ -124,7 +125,7 @@ const opportunities = [
     tags: ["Academics"],
     deadline: "2026-12-01",
     description:
-      "Merit-based scholarship for outstanding academic performance.",
+      "Merit-based scholarship.",
     link:
       "https://scholarships.gov.in/"
   },
@@ -136,7 +137,7 @@ const opportunities = [
     tags: ["HTML", "CSS", "JavaScript"],
     deadline: "Rolling",
     description:
-      "Free certification covering web design fundamentals.",
+      "Free web design certification.",
     link:
       "https://www.freecodecamp.org/"
   },
@@ -160,7 +161,7 @@ const opportunities = [
     tags: ["API", "Backend"],
     deadline: "Rolling",
     description:
-      "Certification covering APIs and backend fundamentals.",
+      "API and backend fundamentals certification.",
     link:
       "https://academy.postman.com/"
   },
@@ -172,7 +173,7 @@ const opportunities = [
     tags: ["DSA", "C++", "Python"],
     deadline: "Weekly",
     description:
-      "Weekly coding contest for DSA practice.",
+      "Weekly coding contest.",
     link:
       "https://www.codechef.com/"
   },
@@ -227,27 +228,34 @@ const CATEGORIES = [
 ];
 
 
-// ------------------------------------------------------
-// STATE
-// ------------------------------------------------------
+// ======================================================
+// GLOBAL STATE
+// ======================================================
 
 let currentUser = null;
 
 let profile = {
+
   name: "",
+
   education: "",
+
   location: "India",
+
   about: "",
+
   skills: [],
+
   interests: []
+
 };
 
 let bookmarks = [];
 
 
-// ------------------------------------------------------
-// INITIALIZATION
-// ------------------------------------------------------
+// ======================================================
+// PAGE LOAD
+// ======================================================
 
 document.addEventListener(
   "DOMContentLoaded",
@@ -271,96 +279,145 @@ document.addEventListener(
 );
 
 
-// ------------------------------------------------------
+// ======================================================
 // AUTH INITIALIZATION
-// ------------------------------------------------------
+// ======================================================
 
 async function initializeAuth() {
 
-  const {
-    data: {
-      session
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await scoutSupabase.auth.getSession();
+
+
+    if (error) {
+
+      console.error(
+        "Session error:",
+        error
+      );
+
+      return;
+
     }
-  } =
-    await scoutSupabase.auth.getSession();
 
 
-  if (session) {
+    if (data.session) {
 
-    currentUser =
-      session.user;
+      currentUser =
+        data.session.user;
 
-    await loadUserData();
+      await loadUserData();
+
+    }
+
+
+    scoutSupabase.auth.onAuthStateChange(
+      async (event, session) => {
+
+        if (
+          event === "SIGNED_IN" &&
+          session
+        ) {
+
+          currentUser =
+            session.user;
+
+          await loadUserData();
+
+          updateAuthUI();
+
+          renderDiscover();
+
+          renderDashboard();
+
+          renderProfilePage();
+
+        }
+
+
+        if (
+          event === "SIGNED_OUT"
+        ) {
+
+          currentUser = null;
+
+          profile = {
+
+            name: "",
+
+            education: "",
+
+            location: "India",
+
+            about: "",
+
+            skills: [],
+
+            interests: []
+
+          };
+
+          bookmarks = [];
+
+          updateAuthUI();
+
+          renderDiscover();
+
+          renderDashboard();
+
+          renderProfilePage();
+
+        }
+
+
+        if (
+          event === "PASSWORD_RECOVERY"
+        ) {
+
+          document.getElementById(
+            "resetModal"
+          ).hidden = false;
+
+          document.body.classList.add(
+            "modal-open"
+          );
+
+        }
+
+      }
+    );
+
+
+    updateAuthUI();
+
+    renderDiscover();
+
+    renderDashboard();
+
+    renderProfilePage();
 
   }
 
+  catch (error) {
 
-  scoutSupabase.auth.onAuthStateChange(
-    async (event, session) => {
+    console.error(
+      "Authentication initialization failed:",
+      error
+    );
 
-      if (event === "SIGNED_IN") {
-
-        currentUser =
-          session.user;
-
-        await loadUserData();
-
-        updateAuthUI();
-
-        renderDiscover();
-
-        renderDashboard();
-
-        renderProfilePage();
-
-        showToast(
-          "Logged in successfully!"
-        );
-
-      }
-
-
-      if (event === "SIGNED_OUT") {
-
-        currentUser = null;
-
-        resetUserData();
-
-        updateAuthUI();
-
-      }
-
-
-      if (event === "PASSWORD_RECOVERY") {
-
-        document.getElementById(
-          "resetModal"
-        ).hidden = false;
-
-        document.body.classList.add(
-          "modal-open"
-        );
-
-      }
-
-    }
-  );
-
-
-  updateAuthUI();
-
-  renderDiscover();
-
-  renderDashboard();
-
-  renderProfilePage();
+  }
 
 }
 
 
-// ------------------------------------------------------
-// LOAD USER DATA
-// ------------------------------------------------------
+// ======================================================
+// LOAD PROFILE + BOOKMARKS
+// ======================================================
 
 async function loadUserData() {
 
@@ -369,34 +426,44 @@ async function loadUserData() {
   }
 
 
+  // ----------------------------------------------------
+  // PROFILE
+  // ----------------------------------------------------
+
   const {
-    data,
-    error
+    data: profileData,
+    error: profileError
   } =
     await scoutSupabase
       .from("profiles")
       .select("*")
-      .eq("id", currentUser.id)
+      .eq(
+        "id",
+        currentUser.id
+      )
       .maybeSingle();
 
 
-  if (error) {
+  if (profileError) {
 
     console.error(
-      "Profile load error:",
-      error
+      "Profile error:",
+      profileError
     );
 
     showToast(
-      "Could not load your profile."
+      "Could not load profile."
     );
+
+    return;
 
   }
 
 
-  if (!data) {
+  if (!profileData) {
 
     profile = {
+
       name:
         currentUser.user_metadata?.full_name || "",
 
@@ -409,26 +476,44 @@ async function loadUserData() {
       skills: [],
 
       interests: []
+
     };
 
 
-    await scoutSupabase
-      .from("profiles")
-      .insert({
-        id: currentUser.id,
+    const {
+      error
+    } =
+      await scoutSupabase
+        .from("profiles")
+        .insert({
 
-        name: profile.name,
+          id:
+            currentUser.id,
 
-        education: "",
+          name:
+            profile.name,
 
-        location: "India",
+          education: "",
 
-        about: "",
+          location: "India",
 
-        skills: [],
+          about: "",
 
-        interests: []
-      });
+          skills: [],
+
+          interests: []
+
+        });
+
+
+    if (error) {
+
+      console.error(
+        "Profile creation error:",
+        error
+      );
+
+    }
 
   }
 
@@ -437,31 +522,35 @@ async function loadUserData() {
     profile = {
 
       name:
-        data.name || "",
+        profileData.name || "",
 
       education:
-        data.education || "",
+        profileData.education || "",
 
       location:
-        data.location || "India",
+        profileData.location || "India",
 
       about:
-        data.about || "",
+        profileData.about || "",
 
       skills:
-        Array.isArray(data.skills)
-          ? data.skills
+        Array.isArray(profileData.skills)
+          ? profileData.skills
           : [],
 
       interests:
-        Array.isArray(data.interests)
-          ? data.interests
+        Array.isArray(profileData.interests)
+          ? profileData.interests
           : []
 
     };
 
   }
 
+
+  // ----------------------------------------------------
+  // BOOKMARKS
+  // ----------------------------------------------------
 
   const {
     data: bookmarkData,
@@ -470,15 +559,20 @@ async function loadUserData() {
     await scoutSupabase
       .from("bookmarks")
       .select("opportunity_id")
-      .eq("user_id", currentUser.id);
+      .eq(
+        "user_id",
+        currentUser.id
+      );
 
 
   if (bookmarkError) {
 
     console.error(
-      "Bookmark load error:",
+      "Bookmark error:",
       bookmarkError
     );
+
+    bookmarks = [];
 
   }
 
@@ -487,7 +581,9 @@ async function loadUserData() {
     bookmarks =
       bookmarkData.map(
         item =>
-          Number(item.opportunity_id)
+          Number(
+            item.opportunity_id
+          )
       );
 
   }
@@ -498,52 +594,18 @@ async function loadUserData() {
 }
 
 
-// ------------------------------------------------------
-// RESET LOCAL USER STATE
-// ------------------------------------------------------
-
-function resetUserData() {
-
-  profile = {
-
-    name: "",
-
-    education: "",
-
-    location: "India",
-
-    about: "",
-
-    skills: [],
-
-    interests: []
-
-  };
-
-
-  bookmarks = [];
-
-  renderProfilePage();
-
-  renderDashboard();
-
-  renderDiscover();
-
-}
-
-
-// ------------------------------------------------------
+// ======================================================
 // AUTH UI
-// ------------------------------------------------------
+// ======================================================
 
 function updateAuthUI() {
 
-  const loginBtn =
+  const loginButton =
     document.getElementById(
       "loginBtn"
     );
 
-  const userMenu =
+  const userButton =
     document.getElementById(
       "userMenuBtn"
     );
@@ -551,9 +613,9 @@ function updateAuthUI() {
 
   if (currentUser) {
 
-    loginBtn.hidden = true;
+    loginButton.hidden = true;
 
-    userMenu.hidden = false;
+    userButton.hidden = false;
 
 
     const name =
@@ -579,20 +641,22 @@ function updateAuthUI() {
 
   else {
 
-    loginBtn.hidden = false;
+    loginButton.hidden = false;
 
-    userMenu.hidden = true;
+    userButton.hidden = true;
 
   }
 
 }
 
 
-// ------------------------------------------------------
-// AUTHENTICATION SETUP
-// ------------------------------------------------------
+// ======================================================
+// AUTH SETUP
+// ======================================================
 
 function setupAuthentication() {
+
+  // Login button
 
   document.getElementById(
     "loginBtn"
@@ -601,6 +665,8 @@ function setupAuthentication() {
     openLoginModal
   );
 
+
+  // Close
 
   document.getElementById(
     "closeLoginModal"
@@ -618,6 +684,8 @@ function setupAuthentication() {
   );
 
 
+  // Login / Signup switch
+
   document.getElementById(
     "loginTab"
   ).addEventListener(
@@ -633,6 +701,8 @@ function setupAuthentication() {
     showSignupForm
   );
 
+
+  // Forms
 
   document.getElementById(
     "loginForm"
@@ -650,6 +720,8 @@ function setupAuthentication() {
   );
 
 
+  // Forgot password
+
   document.getElementById(
     "forgotPasswordBtn"
   ).addEventListener(
@@ -657,6 +729,8 @@ function setupAuthentication() {
     forgotPassword
   );
 
+
+  // Password reset
 
   document.getElementById(
     "resetForm"
@@ -682,16 +756,21 @@ function setupAuthentication() {
   );
 
 
+  // User menu
+
   document.getElementById(
     "userMenuBtn"
   ).addEventListener(
     "click",
-    () => {
+    event => {
+
+      event.stopPropagation();
 
       const dropdown =
         document.getElementById(
           "userDropdown"
         );
+
 
       dropdown.hidden =
         !dropdown.hidden;
@@ -699,6 +778,8 @@ function setupAuthentication() {
     }
   );
 
+
+  // Profile
 
   document.getElementById(
     "dropdownProfile"
@@ -716,6 +797,8 @@ function setupAuthentication() {
   );
 
 
+  // Logout
+
   document.getElementById(
     "dropdownLogout"
   ).addEventListener(
@@ -724,17 +807,20 @@ function setupAuthentication() {
   );
 
 
+  // Close dropdown
+
   document.addEventListener(
     "click",
     event => {
 
-      const accountArea =
+      const area =
         document.querySelector(
           ".account-area"
         );
 
+
       if (
-        !accountArea.contains(
+        !area.contains(
           event.target
         )
       ) {
@@ -751,9 +837,9 @@ function setupAuthentication() {
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // LOGIN
-// ------------------------------------------------------
+// ======================================================
 
 async function login(event) {
 
@@ -775,10 +861,22 @@ async function login(event) {
     ).value;
 
 
-  if (!email || !password) {
+  if (!email) {
 
     setAuthMessage(
-      "Enter your email and password.",
+      "Enter your email.",
+      true
+    );
+
+    return;
+
+  }
+
+
+  if (!password) {
+
+    setAuthMessage(
+      "Enter your password.",
       true
     );
 
@@ -801,10 +899,14 @@ async function login(event) {
     data,
     error
   } =
-    await scoutSupabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    await scoutSupabase.auth
+      .signInWithPassword({
+
+        email,
+
+        password
+
+      });
 
 
   button.disabled = false;
@@ -815,7 +917,10 @@ async function login(event) {
 
   if (error) {
 
-    console.error(error);
+    console.error(
+      "Login error:",
+      error
+    );
 
 
     setAuthMessage(
@@ -834,6 +939,7 @@ async function login(event) {
 
   await loadUserData();
 
+
   updateAuthUI();
 
   closeLoginModal();
@@ -846,12 +952,17 @@ async function login(event) {
 
   showTab("profile");
 
+
+  showToast(
+    "Welcome back!"
+  );
+
 }
 
 
-// ------------------------------------------------------
-// SIGNUP
-// ------------------------------------------------------
+// ======================================================
+// SIGN UP
+// ======================================================
 
 async function signup(event) {
 
@@ -885,7 +996,48 @@ async function signup(event) {
     ).value;
 
 
-  if (password !== confirmPassword) {
+  if (!name) {
+
+    setAuthMessage(
+      "Enter your full name.",
+      true
+    );
+
+    return;
+
+  }
+
+
+  if (!email) {
+
+    setAuthMessage(
+      "Enter your email.",
+      true
+    );
+
+    return;
+
+  }
+
+
+  if (
+    password.length < 6
+  ) {
+
+    setAuthMessage(
+      "Password must be at least 6 characters.",
+      true
+    );
+
+    return;
+
+  }
+
+
+  if (
+    password !==
+    confirmPassword
+  ) {
 
     setAuthMessage(
       "Passwords do not match.",
@@ -911,23 +1063,25 @@ async function signup(event) {
     data,
     error
   } =
-    await scoutSupabase.auth.signUp({
+    await scoutSupabase.auth
+      .signUp({
 
-      email,
+        email,
 
-      password,
+        password,
 
-      options: {
+        options: {
 
-        data: {
+          data: {
 
-          full_name: name
+            full_name:
+              name
+
+          }
 
         }
 
-      }
-
-    });
+      });
 
 
   button.disabled = false;
@@ -938,7 +1092,11 @@ async function signup(event) {
 
   if (error) {
 
-    console.error(error);
+    console.error(
+      "Signup error:",
+      error
+    );
+
 
     setAuthMessage(
       error.message,
@@ -951,8 +1109,8 @@ async function signup(event) {
 
 
   /*
-    When email confirmation is disabled,
-    Supabase returns a session immediately.
+    Email confirmation OFF:
+    session exists immediately.
   */
 
   if (data.session) {
@@ -961,25 +1119,57 @@ async function signup(event) {
       data.user;
 
 
-    await scoutSupabase
-      .from("profiles")
-      .upsert({
+    profile = {
 
-        id: currentUser.id,
+      name,
 
-        name,
+      education: "",
 
-        education: "",
+      location: "India",
 
-        location: "India",
+      about: "",
 
-        about: "",
+      skills: [],
 
-        skills: [],
+      interests: []
 
-        interests: []
+    };
 
-      });
+
+    const {
+      error:
+        profileError
+    } =
+      await scoutSupabase
+        .from("profiles")
+        .upsert({
+
+          id:
+            currentUser.id,
+
+          name,
+
+          education: "",
+
+          location: "India",
+
+          about: "",
+
+          skills: [],
+
+          interests: []
+
+        });
+
+
+    if (profileError) {
+
+      console.error(
+        "Profile creation error:",
+        profileError
+      );
+
+    }
 
 
     await loadUserData();
@@ -989,7 +1179,14 @@ async function signup(event) {
 
     updateAuthUI();
 
+    renderProfilePage();
+
+    renderDashboard();
+
+    renderDiscover();
+
     showTab("profile");
+
 
     showToast(
       "Account created successfully!"
@@ -998,6 +1195,10 @@ async function signup(event) {
   }
 
   else {
+
+    /*
+      Email confirmation ON.
+    */
 
     setAuthMessage(
       "Account created. Check your email to confirm your account."
@@ -1008,9 +1209,9 @@ async function signup(event) {
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // FORGOT PASSWORD
-// ------------------------------------------------------
+// ======================================================
 
 async function forgotPassword() {
 
@@ -1038,16 +1239,27 @@ async function forgotPassword() {
   const {
     error
   } =
-    await scoutSupabase.auth.resetPasswordForEmail(
-      email,
-      {
-        redirectTo:
-          window.location.origin
-      }
-    );
+    await scoutSupabase.auth
+      .resetPasswordForEmail(
+
+        email,
+
+        {
+
+          redirectTo:
+            window.location.origin
+
+        }
+
+      );
 
 
   if (error) {
+
+    console.error(
+      error
+    );
+
 
     setAuthMessage(
       error.message,
@@ -1066,9 +1278,9 @@ async function forgotPassword() {
 }
 
 
-// ------------------------------------------------------
-// PASSWORD UPDATE
-// ------------------------------------------------------
+// ======================================================
+// UPDATE PASSWORD
+// ======================================================
 
 async function updatePassword(event) {
 
@@ -1087,7 +1299,10 @@ async function updatePassword(event) {
     ).value;
 
 
-  if (password !== confirmPassword) {
+  if (
+    password !==
+    confirmPassword
+  ) {
 
     showToast(
       "Passwords do not match."
@@ -1101,9 +1316,12 @@ async function updatePassword(event) {
   const {
     error
   } =
-    await scoutSupabase.auth.updateUser({
-      password
-    });
+    await scoutSupabase.auth
+      .updateUser({
+
+        password
+
+      });
 
 
   if (error) {
@@ -1119,6 +1337,7 @@ async function updatePassword(event) {
 
   closeResetModal();
 
+
   showToast(
     "Password updated successfully!"
   );
@@ -1126,21 +1345,17 @@ async function updatePassword(event) {
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // LOGOUT
-// ------------------------------------------------------
+// ======================================================
 
 async function logout() {
-
-  document.getElementById(
-    "userDropdown"
-  ).hidden = true;
-
 
   const {
     error
   } =
-    await scoutSupabase.auth.signOut();
+    await scoutSupabase.auth
+      .signOut();
 
 
   if (error) {
@@ -1156,11 +1371,42 @@ async function logout() {
 
   currentUser = null;
 
-  resetUserData();
+
+  profile = {
+
+    name: "",
+
+    education: "",
+
+    location: "India",
+
+    about: "",
+
+    skills: [],
+
+    interests: []
+
+  };
+
+
+  bookmarks = [];
+
+
+  document.getElementById(
+    "userDropdown"
+  ).hidden = true;
+
 
   updateAuthUI();
 
   showTab("discover");
+
+  renderDiscover();
+
+  renderDashboard();
+
+  renderProfilePage();
+
 
   showToast(
     "Logged out successfully."
@@ -1169,9 +1415,9 @@ async function logout() {
 }
 
 
-// ------------------------------------------------------
-// AUTH MODALS
-// ------------------------------------------------------
+// ======================================================
+// AUTH MODAL
+// ======================================================
 
 function openLoginModal() {
 
@@ -1235,12 +1481,16 @@ function showLoginForm() {
 
   document.getElementById(
     "loginTab"
-  ).classList.add("active");
+  ).classList.add(
+    "active"
+  );
 
 
   document.getElementById(
     "signupTab"
-  ).classList.remove("active");
+  ).classList.remove(
+    "active"
+  );
 
 
   clearAuthMessage();
@@ -1262,12 +1512,16 @@ function showSignupForm() {
 
   document.getElementById(
     "loginTab"
-  ).classList.remove("active");
+  ).classList.remove(
+    "active"
+  );
 
 
   document.getElementById(
     "signupTab"
-  ).classList.add("active");
+  ).classList.add(
+    "active"
+  );
 
 
   clearAuthMessage();
@@ -1275,9 +1529,13 @@ function showSignupForm() {
 }
 
 
+// ======================================================
+// AUTH MESSAGES
+// ======================================================
+
 function setAuthMessage(
   message,
-  isError = false
+  error = false
 ) {
 
   const element =
@@ -1291,7 +1549,7 @@ function setAuthMessage(
 
 
   element.className =
-    isError
+    error
       ? "auth-message error"
       : "auth-message success";
 
@@ -1306,7 +1564,9 @@ function clearAuthMessage() {
     );
 
 
-  element.textContent = "";
+  element.textContent =
+    "";
+
 
   element.className =
     "auth-message";
@@ -1314,48 +1574,54 @@ function clearAuthMessage() {
 }
 
 
-// ------------------------------------------------------
-// TABS
-// ------------------------------------------------------
+// ======================================================
+// NAVIGATION
+// ======================================================
 
 function setupTabs() {
 
   document.querySelectorAll(
     ".tab-btn"
-  ).forEach(button => {
+  ).forEach(
+    button => {
 
-    button.addEventListener(
-      "click",
-      () => {
+      button.addEventListener(
+        "click",
+        () => {
 
-        const tab =
-          button.dataset.tab;
+          const tab =
+            button.dataset.tab;
 
 
-        if (
-          (tab === "profile" ||
-           tab === "dashboard") &&
-          !currentUser
-        ) {
+          if (
+            !currentUser &&
+            (
+              tab === "profile" ||
+              tab === "dashboard"
+            )
+          ) {
 
-          openLoginModal();
+            openLoginModal();
 
-          return;
+            return;
+
+          }
+
+
+          showTab(tab);
 
         }
+      );
 
-
-        showTab(tab);
-
-      }
-    );
-
-  });
+    }
+  );
 
 }
 
 
-function showTab(tabId) {
+function showTab(
+  tabId
+) {
 
   document.querySelectorAll(
     ".tab-btn"
@@ -1383,15 +1649,15 @@ function showTab(tabId) {
   );
 
 
-  const button =
+  const tabButton =
     document.querySelector(
       `.tab-btn[data-tab="${tabId}"]`
     );
 
 
-  if (button) {
+  if (tabButton) {
 
-    button.classList.add(
+    tabButton.classList.add(
       "active"
     );
 
@@ -1442,9 +1708,9 @@ function showTab(tabId) {
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // PROFILE EVENTS
-// ------------------------------------------------------
+// ======================================================
 
 function setupProfileEvents() {
 
@@ -1478,7 +1744,10 @@ function setupProfileEvents() {
 
       }
 
-      showTab("profileEdit");
+
+      showTab(
+        "profileEdit"
+      );
 
     }
   );
@@ -1490,10 +1759,18 @@ function setupProfileEvents() {
     "click",
     () => {
 
-      if (currentUser)
-        showTab("profileEdit");
-      else
+      if (!currentUser) {
+
         openLoginModal();
+
+        return;
+
+      }
+
+
+      showTab(
+        "profileEdit"
+      );
 
     }
   );
@@ -1505,10 +1782,18 @@ function setupProfileEvents() {
     "click",
     () => {
 
-      if (currentUser)
-        showTab("profileEdit");
-      else
+      if (!currentUser) {
+
         openLoginModal();
+
+        return;
+
+      }
+
+
+      showTab(
+        "profileEdit"
+      );
 
     }
   );
@@ -1520,10 +1805,18 @@ function setupProfileEvents() {
     "click",
     () => {
 
-      if (currentUser)
-        showTab("profileEdit");
-      else
+      if (!currentUser) {
+
         openLoginModal();
+
+        return;
+
+      }
+
+
+      showTab(
+        "profileEdit"
+      );
 
     }
   );
@@ -1531,9 +1824,9 @@ function setupProfileEvents() {
 }
 
 
-// ------------------------------------------------------
-// CATEGORY
-// ------------------------------------------------------
+// ======================================================
+// CATEGORY FILTER
+// ======================================================
 
 function populateCategoryFilter() {
 
@@ -1614,9 +1907,41 @@ function populateCategoryCheckboxes() {
 }
 
 
-// ------------------------------------------------------
-// PROFILE LOAD FORM
-// ------------------------------------------------------
+// ======================================================
+// SEARCH
+// ======================================================
+
+function setupSearch() {
+
+  document.getElementById(
+    "searchInput"
+  ).addEventListener(
+    "input",
+    renderDiscover
+  );
+
+
+  document.getElementById(
+    "categoryFilter"
+  ).addEventListener(
+    "change",
+    renderDiscover
+  );
+
+
+  document.getElementById(
+    "sortFilter"
+  ).addEventListener(
+    "change",
+    renderDiscover
+  );
+
+}
+
+
+// ======================================================
+// PROFILE FORM
+// ======================================================
 
 function loadProfileForm() {
 
@@ -1647,7 +1972,9 @@ function loadProfileForm() {
   document.getElementById(
     "pSkills"
   ).value =
-    profile.skills.join(", ");
+    profile.skills.join(
+      ", "
+    );
 
 
   CATEGORIES.forEach(
@@ -1659,10 +1986,14 @@ function loadProfileForm() {
         );
 
 
-      checkbox.checked =
-        profile.interests.includes(
-          category
-        );
+      if (checkbox) {
+
+        checkbox.checked =
+          profile.interests.includes(
+            category
+          );
+
+      }
 
     }
   );
@@ -1670,11 +2001,13 @@ function loadProfileForm() {
 }
 
 
-// ------------------------------------------------------
-// SAVE PROFILE TO SUPABASE
-// ------------------------------------------------------
+// ======================================================
+// SAVE PROFILE
+// ======================================================
 
-async function saveProfile(event) {
+async function saveProfile(
+  event
+) {
 
   event.preventDefault();
 
@@ -1688,46 +2021,69 @@ async function saveProfile(event) {
   }
 
 
+  const name =
+    document.getElementById(
+      "pName"
+    ).value.trim();
+
+
+  const education =
+    document.getElementById(
+      "pEducation"
+    ).value.trim();
+
+
+  const location =
+    document.getElementById(
+      "pLocation"
+    ).value.trim();
+
+
+  const about =
+    document.getElementById(
+      "pAbout"
+    ).value.trim();
+
+
+  const skills =
+    document.getElementById(
+      "pSkills"
+    ).value
+      .split(",")
+      .map(
+        value =>
+          value.trim()
+      )
+      .filter(
+        Boolean
+      );
+
+
+  const interests =
+    Array.from(
+      document.querySelectorAll(
+        "#categoryCheckboxes input:checked"
+      )
+    ).map(
+      checkbox =>
+        checkbox.value
+    );
+
+
   profile = {
 
-    name:
-      document.getElementById(
-        "pName"
-      ).value.trim(),
+    name,
 
-    education:
-      document.getElementById(
-        "pEducation"
-      ).value.trim(),
+    education,
 
     location:
-      document.getElementById(
-        "pLocation"
-      ).value.trim() || "India",
+      location || "India",
 
-    about:
-      document.getElementById(
-        "pAbout"
-      ).value.trim(),
+    about,
 
-    skills:
-      document.getElementById(
-        "pSkills"
-      ).value
-        .split(",")
-        .map(
-          value => value.trim()
-        )
-        .filter(Boolean),
+    skills,
 
-    interests:
-      Array.from(
-        document.querySelectorAll(
-          "#categoryCheckboxes input:checked"
-        )
-      ).map(
-        checkbox => checkbox.value
-      )
+    interests
 
   };
 
@@ -1768,10 +2124,13 @@ async function saveProfile(event) {
 
   if (error) {
 
-    console.error(error);
+    console.error(
+      "Save profile error:",
+      error
+    );
+
 
     showToast(
-      "Could not save profile: " +
       error.message
     );
 
@@ -1788,23 +2147,27 @@ async function saveProfile(event) {
 
   renderDiscover();
 
+  showTab("profile");
+
+
   showToast(
     "Profile saved successfully!"
   );
 
-  showTab("profile");
-
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // PROFILE PAGE
-// ------------------------------------------------------
+// ======================================================
 
 function getInitial() {
 
-  if (!profile.name)
+  if (!profile.name) {
+
     return "?";
+
+  }
 
 
   return profile.name
@@ -1871,7 +2234,9 @@ function renderProfilePage() {
   const matches =
     opportunities.filter(
       opportunity =>
-        matchScore(opportunity) > 0
+        matchScore(
+          opportunity
+        ) > 0
     ).length;
 
 
@@ -1900,6 +2265,10 @@ function renderProfilePage() {
 }
 
 
+// ======================================================
+// PROFILE TAGS
+// ======================================================
+
 function renderProfileTags(
   containerId,
   values,
@@ -1912,7 +2281,8 @@ function renderProfileTags(
     );
 
 
-  container.innerHTML = "";
+  container.innerHTML =
+    "";
 
 
   if (!values.length) {
@@ -1968,9 +2338,9 @@ function renderProfileTags(
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // PROFILE COMPLETION
-// ------------------------------------------------------
+// ======================================================
 
 function renderCompletion() {
 
@@ -1978,23 +2348,20 @@ function renderCompletion() {
 
     {
       label: "Name added",
-      done: Boolean(
-        profile.name
-      )
+      done:
+        Boolean(profile.name)
     },
 
     {
       label: "Education added",
-      done: Boolean(
-        profile.education
-      )
+      done:
+        Boolean(profile.education)
     },
 
     {
       label: "About added",
-      done: Boolean(
-        profile.about
-      )
+      done:
+        Boolean(profile.about)
     },
 
     {
@@ -2020,7 +2387,8 @@ function renderCompletion() {
 
   const completed =
     checks.filter(
-      item => item.done
+      item =>
+        item.done
     ).length;
 
 
@@ -2047,31 +2415,35 @@ function renderCompletion() {
   document.getElementById(
     "completionItems"
   ).innerHTML =
-    checks.map(
-      item => `
+    checks
+      .map(
+        item => `
 
-        <div class="completion-item
-          ${item.done ? "done" : ""}">
+          <div
+            class="completion-item
+            ${item.done ? "done" : ""}"
+          >
 
-          <span>
-            ${item.label}
-          </span>
+            <span>
+              ${item.label}
+            </span>
 
-          <span class="completion-check">
-            ${item.done ? "✓" : "—"}
-          </span>
+            <span class="completion-check">
+              ${item.done ? "✓" : "—"}
+            </span>
 
-        </div>
+          </div>
 
-      `
-    ).join("");
+        `
+      )
+      .join("");
 
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // MATCHING
-// ------------------------------------------------------
+// ======================================================
 
 function matchScore(
   opportunity
@@ -2120,37 +2492,9 @@ function matchScore(
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // DISCOVER
-// ------------------------------------------------------
-
-function setupSearch() {
-
-  document.getElementById(
-    "searchInput"
-  ).addEventListener(
-    "input",
-    renderDiscover
-  );
-
-
-  document.getElementById(
-    "categoryFilter"
-  ).addEventListener(
-    "change",
-    renderDiscover
-  );
-
-
-  document.getElementById(
-    "sortFilter"
-  ).addEventListener(
-    "change",
-    renderDiscover
-  );
-
-}
-
+// ======================================================
 
 function renderDiscover() {
 
@@ -2180,21 +2524,24 @@ function renderDiscover() {
         const matchesSearch =
           opportunity.title
             .toLowerCase()
-            .includes(search)
-          ||
+            .includes(
+              search
+            ) ||
+
           opportunity.tags.some(
             tag =>
               tag
                 .toLowerCase()
-                .includes(search)
+                .includes(
+                  search
+                )
           );
 
 
         const matchesCategory =
-          category === "all"
-          ||
+          category === "all" ||
           opportunity.category ===
-          category;
+            category;
 
 
         return (
@@ -2227,8 +2574,10 @@ function renderDiscover() {
       (a, b) => {
 
         const aDate =
-          a.deadline === "Rolling" ||
-          a.deadline === "Weekly"
+          (
+            a.deadline === "Rolling" ||
+            a.deadline === "Weekly"
+          )
             ? Infinity
             : new Date(
                 a.deadline
@@ -2236,8 +2585,10 @@ function renderDiscover() {
 
 
         const bDate =
-          b.deadline === "Rolling" ||
-          b.deadline === "Weekly"
+          (
+            b.deadline === "Rolling" ||
+            b.deadline === "Weekly"
+          )
             ? Infinity
             : new Date(
                 b.deadline
@@ -2245,7 +2596,8 @@ function renderDiscover() {
 
 
         return (
-          aDate - bDate
+          aDate -
+          bDate
         );
 
       }
@@ -2276,9 +2628,9 @@ function renderDiscover() {
 }
 
 
-// ------------------------------------------------------
-// OPPORTUNITY CARDS
-// ------------------------------------------------------
+// ======================================================
+// OPPORTUNITY GRID
+// ======================================================
 
 function renderGrid(
   list,
@@ -2291,15 +2643,21 @@ function renderGrid(
     );
 
 
-  container.innerHTML = "";
+  container.innerHTML =
+    "";
 
 
   if (!list.length) {
 
-    container.innerHTML =
-      `<p class="empty-state">
+    container.innerHTML = `
+
+      <p class="empty-state">
+
         No opportunities match your filters yet.
-      </p>`;
+
+      </p>
+
+    `;
 
     return;
 
@@ -2336,30 +2694,40 @@ function renderGrid(
         ${
           score > 0
             ? `
+
               <span class="match-badge">
+
                 ${
                   score >= 3
                     ? "🔥 Great match"
                     : "✨ Match"
                 }
+
               </span>
+
             `
             : ""
         }
 
 
         <div class="opp-category">
+
           ${opportunity.category}
+
         </div>
 
 
         <h3>
+
           ${opportunity.title}
+
         </h3>
 
 
         <p class="opp-desc">
+
           ${opportunity.description}
+
         </p>
 
 
@@ -2369,7 +2737,9 @@ function renderGrid(
             opportunity.tags
               .map(
                 tag =>
-                  `<span class="tag">${tag}</span>`
+                  `<span class="tag">
+                    ${tag}
+                  </span>`
               )
               .join("")
           }
@@ -2379,20 +2749,30 @@ function renderGrid(
 
         <div class="opp-footer">
 
+
           <span class="deadline">
+
             📅 ${opportunity.deadline}
+
           </span>
 
 
           <div class="opp-actions">
 
+
             <button
               class="bookmark-btn
-                ${bookmarked ? "active" : ""}"
+              ${bookmarked ? "active" : ""}"
 
               data-id="${opportunity.id}"
             >
-              ${bookmarked ? "★" : "☆"}
+
+              ${
+                bookmarked
+                  ? "★"
+                  : "☆"
+              }
+
             </button>
 
 
@@ -2402,8 +2782,11 @@ function renderGrid(
               rel="noopener noreferrer"
               class="view-link"
             >
+
               View →
+
             </a>
+
 
           </div>
 
@@ -2431,13 +2814,11 @@ function renderGrid(
           "click",
           () => {
 
-            const id =
+            toggleBookmark(
               Number(
                 button.dataset.id
-              );
-
-
-            toggleBookmark(id);
+              )
+            );
 
           }
         );
@@ -2448,9 +2829,9 @@ function renderGrid(
 }
 
 
-// ------------------------------------------------------
-// BOOKMARKS -> SUPABASE
-// ------------------------------------------------------
+// ======================================================
+// BOOKMARKS
+// ======================================================
 
 async function toggleBookmark(
   opportunityId
@@ -2465,13 +2846,15 @@ async function toggleBookmark(
   }
 
 
-  const exists =
+  const alreadyBookmarked =
     bookmarks.includes(
       opportunityId
     );
 
 
-  if (exists) {
+  if (
+    alreadyBookmarked
+  ) {
 
     const {
       error
@@ -2490,6 +2873,11 @@ async function toggleBookmark(
 
 
     if (error) {
+
+      console.error(
+        error
+      );
+
 
       showToast(
         error.message
@@ -2528,6 +2916,11 @@ async function toggleBookmark(
 
     if (error) {
 
+      console.error(
+        error
+      );
+
+
       showToast(
         error.message
       );
@@ -2553,9 +2946,9 @@ async function toggleBookmark(
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // DASHBOARD
-// ------------------------------------------------------
+// ======================================================
 
 function renderDashboard() {
 
@@ -2566,11 +2959,15 @@ function renderDashboard() {
     <div class="stat-card">
 
       <span class="stat-num">
+
         ${opportunities.length}
+
       </span>
 
       <span class="stat-label">
+
         Total Opportunities
+
       </span>
 
     </div>
@@ -2579,11 +2976,15 @@ function renderDashboard() {
     <div class="stat-card">
 
       <span class="stat-num">
+
         ${bookmarks.length}
+
       </span>
 
       <span class="stat-label">
+
         Bookmarked
+
       </span>
 
     </div>
@@ -2592,11 +2993,15 @@ function renderDashboard() {
     <div class="stat-card">
 
       <span class="stat-num">
+
         ${profile.skills.length}
+
       </span>
 
       <span class="stat-label">
+
         Skills Added
+
       </span>
 
     </div>
@@ -2612,17 +3017,25 @@ function renderDashboard() {
           matchScore(a)
       )
       .filter(
-        item =>
-          matchScore(item) > 0
+        opportunity =>
+          matchScore(
+            opportunity
+          ) > 0
       )
-      .slice(0, 4);
+      .slice(
+        0,
+        4
+      );
 
 
   renderGrid(
 
     recommended.length
       ? recommended
-      : opportunities.slice(0, 4),
+      : opportunities.slice(
+          0,
+          4
+        ),
 
     "recommendedList"
 
@@ -2632,9 +3045,9 @@ function renderDashboard() {
   renderGrid(
 
     opportunities.filter(
-      item =>
+      opportunity =>
         bookmarks.includes(
-          item.id
+          opportunity.id
         )
     ),
 
@@ -2645,9 +3058,9 @@ function renderDashboard() {
 }
 
 
-// ------------------------------------------------------
+// ======================================================
 // TOAST
-// ------------------------------------------------------
+// ======================================================
 
 function showToast(
   message
